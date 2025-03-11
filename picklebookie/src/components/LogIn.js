@@ -23,6 +23,7 @@ const LogIn = () => {
       alert('Login successful!'); // Replace with navigation if needed
     } catch (error) {
       setError('Failed to log in. Check your credentials and try again.');
+      console.error(error); // Log the actual error for debugging
     }
   };
 

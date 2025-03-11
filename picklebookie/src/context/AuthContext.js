@@ -1,45 +1,106 @@
 // src/context/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from './firebase'; // Import auth from firebase.js
+import { auth, db } from './firebase'; // Import both auth and db
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore'; // Add these imports
 
 // Create a context for Auth
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Sign-up function
-  const signUp = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  // Function to create/update user document
+  const createUserDocument = async (user, additionalData = {}) => {
+    if (!user) return;
+
+    // Reference to user document using auth UID as document ID
+    const userRef = doc(db, 'users', user.uid);
+
+    // Check if the document already exists
+    const userSnapshot = await getDoc(userRef);
+
+    // If no document exists, create one
+    if (!userSnapshot.exists()) {
+      const { email, displayName } = user;
+      const createdAt = new Date();
+
+      try {
+        await setDoc(userRef, {
+          name: displayName || additionalData.name || email.split('@')[0],
+          email,
+          createdAt,
+          ...additionalData,
+        });
+        console.log('User document created successfully');
+      } catch (error) {
+        console.error('Error creating user document', error);
+      }
+    }
+
+    return userRef;
   };
 
-  // Log-in function
-  const logIn = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
+  // Sign-up function - now creates user document too
+  const signUp = async (email, password, name) => {
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    // Create user document after successful signup
+    await createUserDocument(userCredential.user, { name });
+    return userCredential.user;
   };
 
-  // Log-out function
+  // Log-in function - checks for user document too
+  const logIn = async (email, password) => {
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    // Check for user document after login
+    await createUserDocument(userCredential.user);
+    return userCredential.user;
+  };
+
+  // Log-out function (unchanged)
   const logOut = () => {
     return signOut(auth);
   };
 
   // Effect to listen for changes in auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user); // Set user state based on auth state
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // For existing users, make sure they have a document
+        await createUserDocument(user);
+      }
+      setUser(user);
+      setLoading(false);
     });
+
     return unsubscribe;
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, signUp, logIn, logOut }}>
-      {children}
+    <AuthContext.Provider
+      value={{
+        user,
+        signUp,
+        logIn,
+        logOut,
+        loading,
+      }}
+    >
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
