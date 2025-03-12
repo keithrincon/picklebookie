@@ -1,13 +1,13 @@
-// src/context/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, db } from './firebase'; // Import both auth and db
+import { auth, db, googleProvider } from './firebase'; // Import googleProvider
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore'; // Add these imports
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // Create a context for Auth
 const AuthContext = createContext();
@@ -71,6 +71,14 @@ export const AuthProvider = ({ children }) => {
     return userCredential.user;
   };
 
+  // Google Sign-In function
+  const logInWithGoogle = async () => {
+    const userCredential = await signInWithPopup(auth, googleProvider);
+    // Create user document after successful Google Sign-In
+    await createUserDocument(userCredential.user);
+    return userCredential.user;
+  };
+
   // Log-out function (unchanged)
   const logOut = () => {
     return signOut(auth);
@@ -96,6 +104,7 @@ export const AuthProvider = ({ children }) => {
         user,
         signUp,
         logIn,
+        logInWithGoogle,
         logOut,
         loading,
       }}

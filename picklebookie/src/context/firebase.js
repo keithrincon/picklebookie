@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth'; // Import GoogleAuthProvider
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { getAnalytics } from 'firebase/analytics';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -23,6 +24,10 @@ const auth = getAuth(app);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
+const functions = getFunctions(app);
+
+// Create Google provider
+const googleProvider = new GoogleAuthProvider();
 
 // VAPID key for web push notifications
 const VAPID_KEY =
@@ -85,5 +90,8 @@ export const onMessageListener = () => {
   });
 };
 
+// Export the callable function
+export const sendNotification = httpsCallable(functions, 'sendNotification');
+
 // Export the objects
-export { auth, db, messaging };
+export { auth, googleProvider, db, messaging }; // Export googleProvider

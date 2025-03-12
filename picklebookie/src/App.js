@@ -5,6 +5,7 @@ import NotificationComponent from './components/NotificationComponent';
 import './index.css';
 import CreatePost from './components/CreatePost';
 import PostFeed from './components/PostFeed';
+import NotifyButton from './components/NotifyButton';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         </header>
         <main className='flex-1 p-4'>
           <p className='text-gray-700'>Welcome to Picklebookie!</p>
+          <NotifyButton />
           <CreatePost />
           <PostFeed />
         </main>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { requestNotificationPermission } from '../context/firebase'; // Import the function
 
 const LogIn = () => {
   const [email, setEmail] = useState('');
@@ -21,6 +22,16 @@ const LogIn = () => {
       setEmail('');
       setPassword('');
       alert('Login successful!'); // Replace with navigation if needed
+
+      // Request notification permission and save the FCM token
+      const token = await requestNotificationPermission();
+      if (token) {
+        console.log('FCM token saved:', token);
+      } else {
+        console.log(
+          'Notification permission not granted or token not available.'
+        );
+      }
     } catch (error) {
       setError('Failed to log in. Check your credentials and try again.');
       console.error(error); // Log the actual error for debugging
