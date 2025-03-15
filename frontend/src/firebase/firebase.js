@@ -7,8 +7,8 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: 'AIzaSyCJxpMsMUGsxlD54bGjj3-aftTK3pm5DRk',
-  authDomain: 'picklebookie.firebaseapp.com',
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
   projectId: 'picklebookie',
   storageBucket: 'picklebookie.firebasestorage.app',
   messagingSenderId: '921444216697',
