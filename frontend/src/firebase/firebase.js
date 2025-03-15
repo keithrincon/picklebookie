@@ -7,8 +7,8 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: 'picklebookie',
   storageBucket: 'picklebookie.firebasestorage.app',
   messagingSenderId: '921444216697',
@@ -21,6 +21,7 @@ const app = initializeApp(firebaseConfig);
 
 // Get instances for services
 const auth = getAuth(app);
+// eslint-disable-next-line no-unused-vars
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
