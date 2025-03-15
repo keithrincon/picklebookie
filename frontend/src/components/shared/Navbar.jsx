@@ -1,81 +1,47 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { requestNotificationPermission } from '../../firebase/firebase';
+import SearchBar from '../search/SearchBar';
 
 const Navbar = () => {
   const { user, logOut } = useAuth();
-  const [notificationStatus, setNotificationStatus] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Function to handle enabling notifications
-  const handleEnableNotifications = async () => {
-    setIsLoading(true);
-    setNotificationStatus('');
-
-    try {
-      const token = await requestNotificationPermission();
-
-      if (token) {
-        setNotificationStatus('success');
-        setTimeout(() => setNotificationStatus(''), 3000);
-      } else {
-        setNotificationStatus('error');
-      }
-    } catch (error) {
-      console.error('Error enabling notifications:', error);
-      setNotificationStatus('error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
-    <nav className='bg-blue-600 p-4 text-white'>
-      <div className='container mx-auto max-w-7xl flex justify-between items-center'>
-        <Link to='/' className='text-xl font-bold'>
+    <nav className='bg-green-600 text-white p-4 shadow-md'>
+      <div className='container mx-auto flex flex-col md:flex-row justify-between items-center'>
+        <Link to='/' className='text-2xl font-bold mb-4 md:mb-0'>
           Picklebookie
         </Link>
-        <div className='space-x-4'>
+
+        <div className='w-full md:w-1/3 mb-4 md:mb-0'>
+          <SearchBar />
+        </div>
+
+        <div className='flex space-x-4'>
           {user ? (
             <>
-              <div className='relative inline-block'>
-                <button
-                  onClick={handleEnableNotifications}
-                  disabled={isLoading}
-                  className={`px-4 py-2 rounded mr-4 transition-colors ${
-                    isLoading
-                      ? 'bg-gray-500'
-                      : notificationStatus === 'success'
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-blue-500 hover:bg-blue-600'
-                  }`}
-                >
-                  {isLoading
-                    ? 'Enabling...'
-                    : notificationStatus === 'success'
-                    ? 'Notifications Enabled'
-                    : 'Enable Notifications'}
-                </button>
-                {notificationStatus === 'error' && (
-                  <div className='absolute bottom-full mb-2 left-0 bg-red-600 text-white px-3 py-1 rounded text-sm whitespace-nowrap'>
-                    Please enable notifications in browser settings.
-                  </div>
-                )}
-              </div>
+              <span className='mr-4'>
+                Welcome, {user.displayName || user.email}
+              </span>
               <button
                 onClick={logOut}
-                className='bg-red-600 px-4 py-2 rounded hover:bg-red-700'
+                className='bg-white text-green-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors'
               >
                 Log Out
               </button>
             </>
           ) : (
             <>
-              <Link to='/login' className='mr-4 hover:text-yellow-400'>
+              <Link
+                to='/login'
+                className='bg-white text-green-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors'
+              >
                 Log In
               </Link>
-              <Link to='/signup' className='hover:text-yellow-400'>
+              <Link
+                to='/signup'
+                className='border border-white px-4 py-2 rounded hover:bg-green-700 transition-colors'
+              >
                 Sign Up
               </Link>
             </>
