@@ -1,8 +1,5 @@
 /* eslint-disable no-undef, no-restricted-globals */
-// Rest of your service worker code...
-// Give the service worker access to Firebase Messaging.
-// Note that you can only use Firebase Messaging here. Other Firebase libraries
-// are not available in the service worker.
+// Import Firebase scripts
 importScripts(
   'https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js'
 );
@@ -10,10 +7,9 @@ importScripts(
   'https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js'
 );
 
-// Initialize the Firebase app in the service worker by passing in the
-// messagingSenderId.
+// Initialize Firebase app inside the service worker using public Firebase config
 firebase.initializeApp({
-  apiKey: 'AIzaSyCJxpMsMUGsxlD54bGjj3-aftTK3pm5DRk',
+  apiKey: 'AIzaSyCJxpMsMUGsxlD54bGjj3-aftTK3pm5DRk', // Use your API Key directly here (cannot use env in service worker)
   authDomain: 'picklebookie.firebaseapp.com',
   projectId: 'picklebookie',
   storageBucket: 'picklebookie.firebasestorage.app',
@@ -22,22 +18,20 @@ firebase.initializeApp({
   measurementId: 'G-Z4SW9ZNEW2',
 });
 
-// Retrieve an instance of Firebase Messaging so that it can handle background
-// messages.
+// Get an instance of Firebase Messaging
 const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log(
-    '[firebase-messaging-sw.js] Received background message ',
+    '[firebase-messaging-sw.js] Received background message:',
     payload
   );
 
-  // Customize notification here
-  const notificationTitle = payload.notification.title;
+  const notificationTitle = payload.notification?.title || 'New Notification';
   const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/logo192.png', // Use your app's icon
+    body: payload.notification?.body || 'You have a new message.',
+    icon: '/logo192.png', // Update with your app's icon
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
