@@ -5,28 +5,28 @@ import { requestNotificationPermission } from '../../firebase/firebase';
 const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState(''); // Add name field
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState(''); // Add username field
   const [error, setError] = useState(null);
-  const { signUp, logInWithGoogle } = useAuth(); // Add logInWithGoogle
+  const { signUp, logInWithGoogle } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null); // Reset error on new attempt
+    setError(null);
 
-    if (!email || !password) {
-      setError('Please enter both email and password.');
+    if (!email || !password || !username) {
+      setError('Please enter email, password, and username.');
       return;
     }
 
     try {
-      // Pass name as a third parameter to signUp
-      await signUp(email, password, name);
+      await signUp(email, password, username); // Pass username to signUp
       setEmail('');
       setPassword('');
       setName('');
-      alert('Sign-up successful!'); // Replace with navigation if needed
+      setUsername('');
+      alert('Sign-up successful!');
 
-      // Request notification permission and save the FCM token
       const token = await requestNotificationPermission();
       if (token) {
         console.log('FCM token saved:', token);
@@ -64,6 +64,15 @@ const SignUp = () => {
     <div className='space-y-4 p-4 border rounded-md shadow-md max-w-sm mx-auto'>
       <form onSubmit={handleSubmit} className='space-y-4'>
         {error && <p className='text-red-600 text-sm'>{error}</p>}
+
+        <input
+          type='text'
+          placeholder='Username'
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className='w-full p-2 border rounded'
+          required
+        />
 
         <input
           type='text'

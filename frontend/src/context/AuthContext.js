@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged,
+  updateProfile, // Import updateProfile
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -47,16 +48,27 @@ export const AuthProvider = ({ children }) => {
     return userRef;
   };
 
-  // Sign-up function - now creates user document too
-  const signUp = async (email, password, name) => {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    // Create user document after successful signup
-    await createUserDocument(userCredential.user, { name });
-    return userCredential.user;
+  // Updated Sign-up function
+  const signUp = async (email, password, username) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+
+      // Set the username in Firebase Authentication profile
+      await updateProfile(user, { displayName: username });
+
+      // Store user details in Firestore
+      await createUserDocument(user, { username });
+
+      return user;
+    } catch (error) {
+      console.error('Error signing up:', error);
+      throw error;
+    }
   };
 
   // Log-in function - checks for user document too

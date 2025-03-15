@@ -24,7 +24,7 @@ const SearchBar = () => {
     };
   }, []);
 
-  // Search function wrapped in useCallback with corrected field names
+  // Simplified search function (only searches by username)
   const handleSearch = useCallback(async () => {
     if (searchTerm.length < 2) {
       setResults([]);
@@ -33,53 +33,16 @@ const SearchBar = () => {
 
     setIsLoading(true);
     try {
-      // Search by name field (your actual field name in the database)
-      const nameQuery = query(
+      const usersQuery = query(
         collection(db, 'users'),
-        where('name', '>=', searchTerm),
-        where('name', '<=', searchTerm + '\uf8ff'),
+        where('username', '>=', searchTerm),
+        where('username', '<=', searchTerm + '\uf8ff'),
         limit(10)
       );
-
-      // Email-based search as fallback
-      const emailQuery = query(
-        collection(db, 'users'),
-        where('email', '>=', searchTerm),
-        where('email', '<=', searchTerm + '\uf8ff'),
-        limit(10)
+      const querySnapshot = await getDocs(usersQuery);
+      setResults(
+        querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
       );
-
-      // Execute both queries
-      const [nameSnapshot, emailSnapshot] = await Promise.all([
-        getDocs(nameQuery).catch(() => ({ docs: [] })),
-        getDocs(emailQuery).catch(() => ({ docs: [] })),
-      ]);
-
-      // Process results
-      const nameResults = nameSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      const emailResults = emailSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      // Combine and remove duplicates
-      const combinedResults = [...nameResults];
-      emailResults.forEach((user) => {
-        if (!combinedResults.some((u) => u.id === user.id)) {
-          combinedResults.push(user);
-        }
-      });
-
-      setResults(combinedResults);
-
-      // Debug info
-      if (combinedResults.length === 0) {
-        console.log('No search results found for:', searchTerm);
-      }
-
       setShowResults(true);
     } catch (error) {
       console.error('Search error:', error);
@@ -110,7 +73,7 @@ const SearchBar = () => {
       <div className='relative'>
         <input
           type='text'
-          placeholder='Search users...'
+          placeholder='Search users by username...'
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={handleInputFocus}
