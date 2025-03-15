@@ -24,7 +24,7 @@ const SearchBar = () => {
     };
   }, []);
 
-  // Search function wrapped in useCallback
+  // Search function wrapped in useCallback with corrected field names
   const handleSearch = useCallback(async () => {
     if (searchTerm.length < 2) {
       setResults([]);
@@ -33,23 +33,60 @@ const SearchBar = () => {
 
     setIsLoading(true);
     try {
-      const usersQuery = query(
+      // Search by name field (your actual field name in the database)
+      const nameQuery = query(
         collection(db, 'users'),
-        where('displayName', '>=', searchTerm),
-        where('displayName', '<=', searchTerm + '\uf8ff'),
+        where('name', '>=', searchTerm),
+        where('name', '<=', searchTerm + '\uf8ff'),
         limit(10)
       );
-      const querySnapshot = await getDocs(usersQuery);
-      setResults(
-        querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+
+      // Email-based search as fallback
+      const emailQuery = query(
+        collection(db, 'users'),
+        where('email', '>=', searchTerm),
+        where('email', '<=', searchTerm + '\uf8ff'),
+        limit(10)
       );
+
+      // Execute both queries
+      const [nameSnapshot, emailSnapshot] = await Promise.all([
+        getDocs(nameQuery).catch(() => ({ docs: [] })),
+        getDocs(emailQuery).catch(() => ({ docs: [] })),
+      ]);
+
+      // Process results
+      const nameResults = nameSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const emailResults = emailSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Combine and remove duplicates
+      const combinedResults = [...nameResults];
+      emailResults.forEach((user) => {
+        if (!combinedResults.some((u) => u.id === user.id)) {
+          combinedResults.push(user);
+        }
+      });
+
+      setResults(combinedResults);
+
+      // Debug info
+      if (combinedResults.length === 0) {
+        console.log('No search results found for:', searchTerm);
+      }
+
       setShowResults(true);
     } catch (error) {
-      console.error(error);
+      console.error('Search error:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm]); // Depend on searchTerm so it updates when the input changes
+  }, [searchTerm]);
 
   // Debounce search
   useEffect(() => {
@@ -60,7 +97,7 @@ const SearchBar = () => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, handleSearch]); // Include handleSearch as a dependency
+  }, [searchTerm, handleSearch]);
 
   const handleInputFocus = () => {
     if (searchTerm.length >= 2) {
@@ -116,15 +153,13 @@ const SearchBar = () => {
                 {user.photoURL && (
                   <img
                     src={user.photoURL}
-                    alt={user.displayName}
+                    alt={user.name}
                     className='w-8 h-8 rounded-full mr-2'
                     onError={(e) => (e.target.src = '/default-avatar.png')}
                   />
                 )}
                 <div>
-                  <div className='font-medium text-gray-800'>
-                    {user.displayName}
-                  </div>
+                  <div className='font-medium text-gray-800'>{user.name}</div>
                   {user.username && (
                     <div className='text-sm text-gray-500'>
                       @{user.username}
