@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { requestNotificationPermission } from '../context/firebase';
+import { useAuth } from '../../context/AuthContext';
+import { requestNotificationPermission } from '../../firebase/firebase';
 
 const Navbar = () => {
   const { user, logOut } = useAuth();

@@ -1,8 +1,8 @@
 // src/components/CreatePost.js
 import React, { useState } from 'react';
-import { db } from '../context/firebase'; // Updated import path
+import { db } from '../../firebase/firebase'; // Updated import path
 import { collection, addDoc } from 'firebase/firestore';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const CreatePost = () => {
   const [time, setTime] = useState('');

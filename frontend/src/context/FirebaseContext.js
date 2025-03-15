@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { db, messaging } from './firebase'; // Import other Firebase services
+import { db, messaging } from '../firebase/firebase'; // Import other Firebase services
 
 const FirebaseContext = createContext();
 

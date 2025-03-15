@@ -1,6 +1,6 @@
 // src/components/PostFeed.js
 import React, { useEffect, useState } from 'react';
-import { db } from '../context/firebase'; // Updated import path
+import { db } from '../../firebase/firebase'; // Updated import path
 import { collection, getDocs } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 

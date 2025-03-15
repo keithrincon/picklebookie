@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { onMessageListener } from '../context/firebase';
+import { onMessageListener } from '../../firebase/firebase';
 import { Toast, ToastContainer } from 'react-bootstrap';
 // Note: You'll need to install react-bootstrap with: npm install react-bootstrap bootstrap
 

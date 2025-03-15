@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { requestNotificationPermission } from '../context/firebase'; // Import the function
+import { useAuth } from '../../context/AuthContext';
+import { requestNotificationPermission } from '../../firebase/firebase'; // Import the function
 
 const LogIn = () => {
   const [email, setEmail] = useState('');

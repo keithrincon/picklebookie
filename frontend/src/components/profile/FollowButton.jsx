@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../context/firebase';
+import { db } from '../../firebase/firebase';
 import {
   collection,
   addDoc,
@@ -9,7 +9,7 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const FollowButton = ({ userId }) => {
   const { user } = useAuth();
