@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'; // Import GoogleAuthProvider
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { getAnalytics } from 'firebase/analytics';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
@@ -95,4 +95,4 @@ export const onMessageListener = () => {
 export const sendNotification = httpsCallable(functions, 'sendNotification');
 
 // Export the objects
-export { auth, googleProvider, db, messaging }; // Export googleProvider
+export { app, auth, googleProvider, db, messaging };
