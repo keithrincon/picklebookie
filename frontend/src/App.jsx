@@ -10,7 +10,7 @@ import Footer from './components/shared/Footer';
 import Home from './pages/Home';
 import Matches from './pages/Matches';
 import Profile from './pages/Profile';
-import NotFound from './pages/NotFound'; // Import the NotFound component
+import NotFound from './pages/NotFound';
 
 function App() {
   return (

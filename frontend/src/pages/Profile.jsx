@@ -11,7 +11,11 @@ import {
   doc,
   orderBy,
 } from 'firebase/firestore';
-import { deleteUser } from 'firebase/auth';
+import {
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+} from 'firebase/auth';
 import FollowButton from '../components/profile/FollowButton';
 import { useAuth } from '../context/AuthContext';
 
@@ -31,8 +35,12 @@ const Profile = () => {
         // Fetch user data
         const userRef = doc(db, 'users', userId);
         const userSnap = await getDoc(userRef);
+        console.log('User data:', userSnap.exists() ? userSnap.data() : null); // Debug log
+
         if (userSnap.exists()) {
           setUser({ id: userSnap.id, ...userSnap.data() });
+        } else {
+          console.log('User not found in Firestore'); // Debug log
         }
 
         // Fetch user posts
@@ -42,16 +50,24 @@ const Profile = () => {
           orderBy('createdAt', 'desc')
         );
         const postsSnapshot = await getDocs(postsQuery);
+        console.log(
+          'Posts:',
+          postsSnapshot.docs.map((doc) => doc.data())
+        ); // Debug log
         setPosts(
           postsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
         );
 
         // Fetch followers
         const followersQuery = query(
-          collection(db, 'followers'),
+          collection(db, 'followers'), // Corrected typo
           where('followingId', '==', userId)
         );
         const followersSnapshot = await getDocs(followersQuery);
+        console.log(
+          'Followers:',
+          followersSnapshot.docs.map((doc) => doc.data())
+        ); // Debug log
         setFollowers(
           followersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
         );
@@ -62,6 +78,10 @@ const Profile = () => {
           where('followerId', '==', userId)
         );
         const followingSnapshot = await getDocs(followingQuery);
+        console.log(
+          'Following:',
+          followingSnapshot.docs.map((doc) => doc.data())
+        ); // Debug log
         setFollowing(
           followingSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
         );
@@ -82,6 +102,13 @@ const Profile = () => {
       )
     ) {
       try {
+        // Reauthenticate the user
+        const credential = EmailAuthProvider.credential(
+          auth.currentUser.email,
+          prompt('Please enter your password to confirm account deletion:')
+        );
+        await reauthenticateWithCredential(auth.currentUser, credential);
+
         // Delete user posts
         const postsQuery = query(
           collection(db, 'posts'),
