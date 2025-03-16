@@ -4,7 +4,9 @@ import { collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 
 const CreatePost = () => {
-  const [time, setTime] = useState('');
+  const [hour, setHour] = useState('');
+  const [minute, setMinute] = useState('');
+  const [period, setPeriod] = useState('AM');
   const [location, setLocation] = useState('');
   const [type, setType] = useState('');
   const [error, setError] = useState('');
@@ -12,31 +14,37 @@ const CreatePost = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
-  const validateTime = (time) => {
-    const timeRegex = /^(1[0-2]|0?[1-9]):[0-5][0-9] (AM|PM)$/i;
-    return timeRegex.test(time);
-  };
+  // Generate hour options: 1-12
+  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+
+  // Generate minute options: 00-55 in 5-minute increments
+  const minutes = Array.from({ length: 12 }, (_, i) => i * 5).map((m) =>
+    m < 10 ? `0${m}` : `${m}`
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Validation
-    if (!time || !location || !type) {
+    // Validate time selections
+    if (!hour || !minute) {
+      setError('Please select both hour and minute for the time.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate other fields
+    if (!location || !type) {
       setError('Please fill in all fields.');
       setIsSubmitting(false);
       return;
     }
 
-    if (!validateTime(time)) {
-      setError('Please enter a valid time (e.g., 1:00 PM).');
-      setIsSubmitting(false);
-      return;
-    }
+    const formattedTime = `${hour}:${minute} ${period}`;
 
     try {
       await addDoc(collection(db, 'posts'), {
-        time,
+        time: formattedTime,
         location,
         type,
         userId: user.uid,
@@ -44,8 +52,10 @@ const CreatePost = () => {
         createdAt: new Date(),
       });
 
-      // Clear form and show success message
-      setTime('');
+      // Clear form
+      setHour('');
+      setMinute('');
+      setPeriod('AM');
       setLocation('');
       setType('');
       setError('');
@@ -71,23 +81,62 @@ const CreatePost = () => {
         {success && <p className='text-green-500 text-sm'>{success}</p>}
 
         <div>
-          <label
-            htmlFor='time'
-            className='block text-sm font-medium text-gray-700'
-          >
+          <label className='block text-sm font-medium text-gray-700 mb-2'>
             Time
           </label>
-          <input
-            type='text'
-            id='time'
-            aria-label='Time'
-            placeholder='Time (e.g., 1:00 PM)'
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
-            required
-          />
+          <div className='flex space-x-2'>
+            {/* Hour Selector */}
+            <div className='w-1/3'>
+              <select
+                value={hour}
+                onChange={(e) => setHour(e.target.value)}
+                className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                required
+              >
+                <option value='' disabled>
+                  Hour
+                </option>
+                {hours.map((h) => (
+                  <option key={h} value={h}>
+                    {h}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Minute Selector */}
+            <div className='w-1/3'>
+              <select
+                value={minute}
+                onChange={(e) => setMinute(e.target.value)}
+                className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                required
+              >
+                <option value='' disabled>
+                  Min
+                </option>
+                {minutes.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* AM/PM Selector */}
+            <div className='w-1/3'>
+              <select
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+                className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+              >
+                <option value='AM'>AM</option>
+                <option value='PM'>PM</option>
+              </select>
+            </div>
+          </div>
         </div>
+
         <div>
           <label
             htmlFor='location'
@@ -106,6 +155,7 @@ const CreatePost = () => {
             required
           />
         </div>
+
         <div>
           <label
             htmlFor='type'
@@ -124,6 +174,7 @@ const CreatePost = () => {
             required
           />
         </div>
+
         <button
           type='submit'
           disabled={isSubmitting}

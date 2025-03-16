@@ -35,7 +35,11 @@ const PostFeed = () => {
 
   // Function to format the date and time
   const formatDateTime = (timestamp) => {
-    const date = new Date(timestamp.seconds * 1000); // Convert Firestore timestamp to JavaScript Date
+    // Handle both Firestore Timestamp objects and JavaScript Date objects
+    const date =
+      timestamp instanceof Date
+        ? timestamp
+        : new Date(timestamp.seconds * 1000);
 
     // Format the date (e.g., "March 11, 2025")
     const formattedDate = date.toLocaleDateString('en-US', {
