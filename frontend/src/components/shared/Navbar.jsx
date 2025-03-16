@@ -7,10 +7,12 @@ const Navbar = () => {
   const { user, logOut } = useAuth();
 
   return (
-    <nav className='bg-green-600 text-white p-4 shadow-md'>
+    <nav className='bg-pickle-green text-white p-4 shadow-md'>
       <div className='container mx-auto flex flex-col md:flex-row justify-between items-center'>
-        <Link to='/' className='text-2xl font-bold mb-4 md:mb-0'>
-          Picklebookie
+        <Link to='/' className='mb-4 md:mb-0'>
+          <div className='font-poppins font-bold text-2xl text-white bg-pickle-green px-5 py-2 rounded-lg shadow-md inline-block uppercase'>
+            PICKLEBOOKIE
+          </div>
         </Link>
 
         <div className='w-full md:w-1/3 mb-4 md:mb-0'>
@@ -25,7 +27,7 @@ const Navbar = () => {
               </span>
               <button
                 onClick={logOut}
-                className='bg-white text-green-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors'
+                className='bg-white text-pickle-green px-4 py-2 rounded hover:bg-gray-100 transition-colors'
               >
                 Log Out
               </button>
@@ -34,13 +36,13 @@ const Navbar = () => {
             <>
               <Link
                 to='/login'
-                className='bg-white text-green-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors'
+                className='bg-white text-pickle-green px-4 py-2 rounded hover:bg-gray-100 transition-colors'
               >
                 Log In
               </Link>
               <Link
                 to='/signup'
-                className='border border-white px-4 py-2 rounded hover:bg-green-700 transition-colors'
+                className='border border-white px-4 py-2 rounded hover:bg-pickle-green-dark transition-colors'
               >
                 Sign Up
               </Link>

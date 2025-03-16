@@ -5,10 +5,10 @@ import PostFeed from '../components/posts/PostFeed';
 const Home = () => {
   return (
     <div>
-      <header className='bg-blue-600 text-white p-4 shadow-md'>
-        <h1 className='text-3xl font-bold'>Picklebookie</h1>
+      <header className='bg-pickle-green text-white p-4 shadow-md'>
+        <h1 className='font-poppins text-3xl font-bold'>Picklebookie</h1>
       </header>
-      <div className='p-4'>
+      <div className='space-y-8 p-4'>
         <CreatePost />
         <PostFeed />
       </div>

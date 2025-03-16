@@ -25,6 +25,9 @@ module.exports = {
         error: '#F44336',
         info: '#2196F3',
       },
+      fontFamily: {
+        poppins: ['Poppins', 'sans-serif'], // Add Poppins font
+      },
     },
   },
   plugins: [], // Add Tailwind plugins if needed

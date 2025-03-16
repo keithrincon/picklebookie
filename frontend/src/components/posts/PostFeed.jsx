@@ -55,7 +55,11 @@ const PostFeed = () => {
   };
 
   if (loading) {
-    return <p className='text-center py-4'>Loading posts...</p>;
+    return (
+      <div className='flex justify-center items-center h-64'>
+        <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600'></div>
+      </div>
+    );
   }
 
   if (error) {
@@ -66,31 +70,40 @@ const PostFeed = () => {
     <div className='space-y-4'>
       {posts.length > 0 ? (
         posts.map((post) => (
-          <div key={post.id} className='bg-white p-4 rounded shadow'>
-            <Link
-              to={`/profile/${post.userId}`}
-              className='text-blue-600 hover:underline'
-            >
-              View Profile
-            </Link>
-            <p>
-              <strong>Time:</strong> {post.time}
-            </p>
-            <p>
-              <strong>Location:</strong> {post.location}
-            </p>
-            <p>
-              <strong>Game Type:</strong> {post.type}
-            </p>
-            {post.createdAt && (
+          <div key={post.id} className='bg-white p-6 rounded-lg shadow-md'>
+            <div className='flex items-center space-x-4 mb-4'>
+              <Link
+                to={`/profile/${post.userId}`}
+                className='text-green-600 hover:underline font-medium'
+              >
+                {post.userName || 'Unknown User'}
+              </Link>
+              <span className='text-sm text-gray-500'>
+                Posted: {formatDateTime(post.createdAt)}
+              </span>
+            </div>
+            <div className='space-y-2'>
               <p>
-                <strong>Posted:</strong> {formatDateTime(post.createdAt)}
+                <strong className='text-green-600'>Time:</strong> {post.time}
               </p>
-            )}
+              <p>
+                <strong className='text-green-600'>Location:</strong>{' '}
+                {post.location}
+              </p>
+              <p>
+                <strong className='text-green-600'>Game Type:</strong>{' '}
+                {post.type}
+              </p>
+            </div>
           </div>
         ))
       ) : (
-        <p className='text-center text-gray-500'>No posts available</p>
+        <div className='text-center text-gray-500 py-6'>
+          <p>No posts available.</p>
+          <Link to='/create-post' className='text-green-600 hover:underline'>
+            Be the first to create a post!
+          </Link>
+        </div>
       )}
     </div>
   );
