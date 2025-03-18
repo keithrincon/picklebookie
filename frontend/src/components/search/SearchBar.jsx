@@ -9,13 +9,12 @@ const SearchBar = () => {
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState(null);
   const searchRef = useRef(null);
-  const loadingStartTimeRef = useRef(null);
 
   // Initialize Firebase Functions
   const functions = getFunctions();
   const searchUsersFunction = httpsCallable(functions, 'searchUsers');
 
-  // Close results when clicking outside - only add listener when results are showing
+  // Close results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -43,31 +42,19 @@ const SearchBar = () => {
       }
 
       setIsLoading(true);
-      loadingStartTimeRef.current = Date.now();
       setError(null);
 
       try {
         const response = await searchUsersFunction({ searchTerm });
         const searchResults = response.data.results || [];
-
-        // Ensure minimum loading time to prevent flickering
-        const loadingTime = Date.now() - loadingStartTimeRef.current;
-        if (loadingTime < 300) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, 300 - loadingTime)
-          );
-        }
-
         setResults(searchResults);
-        if (searchTerm.length >= 2) {
-          setShowResults(true);
-        }
-        setIsLoading(false);
+        setShowResults(true); // Show results only after successful fetch
       } catch (error) {
         console.error('Search error details:', error);
         setError(`Search failed: ${error.message}`);
         setResults([]);
-        setShowResults(false);
+        setShowResults(false); // Hide results on error
+      } finally {
         setIsLoading(false);
       }
     };
@@ -75,10 +62,8 @@ const SearchBar = () => {
     const timer = setTimeout(() => {
       if (searchTerm.length >= 2) {
         performSearch();
-      } else {
-        setShowResults(false);
       }
-    }, 300);
+    }, 300); // Adjust debounce delay as needed
 
     return () => clearTimeout(timer);
   }, [searchTerm, searchUsersFunction]);
@@ -91,7 +76,7 @@ const SearchBar = () => {
 
   const handleSearchButtonClick = () => {
     if (searchTerm.length >= 2) {
-      setShowResults(true);
+      setShowResults((prev) => !prev); // Toggle visibility
     }
   };
 
@@ -129,7 +114,7 @@ const SearchBar = () => {
       </div>
 
       {showResults && (
-        <div className='absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto'>
+        <div className='absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto dropdown-container'>
           {isLoading ? (
             <div className='p-3 text-center text-gray-500'>Loading...</div>
           ) : error ? (
@@ -172,4 +157,4 @@ const SearchBar = () => {
   );
 };
 
-export default SearchBar;
+export default React.memo(SearchBar);
