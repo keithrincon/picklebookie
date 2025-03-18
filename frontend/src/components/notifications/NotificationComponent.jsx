@@ -1,28 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { onMessageListener } from '../../firebase/firebase';
 import { Toast, ToastContainer } from 'react-bootstrap';
-// Note: You'll need to install react-bootstrap with: npm install react-bootstrap bootstrap
 
 const NotificationComponent = () => {
   const [show, setShow] = useState(false);
   const [notification, setNotification] = useState({ title: '', body: '' });
 
   useEffect(() => {
-    const unsubscribe = onMessageListener()
-      .then((payload) => {
-        setNotification({
-          title: payload.notification.title,
-          body: payload.notification.body,
+    const setupMessageListener = async () => {
+      try {
+        const unsubscribe = await onMessageListener();
+        unsubscribe((payload) => {
+          console.log('Foreground notification received:', payload);
+          setNotification({
+            title: payload.notification.title,
+            body: payload.notification.body,
+          });
+          setShow(true);
         });
-        setShow(true);
-      })
-      .catch((err) =>
-        console.log('Failed to receive foreground notification: ', err)
-      );
 
-    return () => {
-      unsubscribe.catch((err) => console.log(err));
+        // Cleanup listener on unmount
+        return () => {
+          unsubscribe();
+        };
+      } catch (err) {
+        console.error('Failed to set up message listener:', err);
+      }
     };
+
+    setupMessageListener();
   }, []);
 
   return (

@@ -42,6 +42,7 @@ const SearchBar = () => {
 
       try {
         const response = await searchUsersFunction({ searchTerm });
+        console.log('Search response:', response.data); // Log the response
         const searchResults = response.data.results || [];
         setResults(searchResults);
         setShowResults(true);
