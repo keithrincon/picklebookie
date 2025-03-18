@@ -9,6 +9,7 @@ const SearchBar = () => {
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState(null);
   const searchRef = useRef(null);
+  const loadingStartTimeRef = useRef(null);
 
   // Initialize Firebase Functions
   const functions = getFunctions();
@@ -42,24 +43,31 @@ const SearchBar = () => {
       }
 
       setIsLoading(true);
+      loadingStartTimeRef.current = Date.now();
       setError(null);
 
       try {
         const response = await searchUsersFunction({ searchTerm });
         const searchResults = response.data.results || [];
+
+        // Ensure minimum loading time to prevent flickering
+        const loadingTime = Date.now() - loadingStartTimeRef.current;
+        if (loadingTime < 300) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, 300 - loadingTime)
+          );
+        }
+
         setResults(searchResults);
-        // Delay showing results to avoid flickering
-        setTimeout(() => {
-          if (searchTerm.length >= 2) {
-            setShowResults(true);
-          }
-        }, 100);
+        if (searchTerm.length >= 2) {
+          setShowResults(true);
+        }
+        setIsLoading(false);
       } catch (error) {
         console.error('Search error details:', error);
         setError(`Search failed: ${error.message}`);
         setResults([]);
         setShowResults(false);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -67,6 +75,8 @@ const SearchBar = () => {
     const timer = setTimeout(() => {
       if (searchTerm.length >= 2) {
         performSearch();
+      } else {
+        setShowResults(false);
       }
     }, 300);
 
@@ -74,13 +84,13 @@ const SearchBar = () => {
   }, [searchTerm, searchUsersFunction]);
 
   const handleInputFocus = () => {
-    if (searchTerm.length >= 2 && results.length > 0 && !showResults) {
+    if (searchTerm.length >= 2 && results.length > 0) {
       setShowResults(true);
     }
   };
 
   const handleSearchButtonClick = () => {
-    if (searchTerm.length >= 2 && !showResults) {
+    if (searchTerm.length >= 2) {
       setShowResults(true);
     }
   };
