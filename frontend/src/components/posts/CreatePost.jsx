@@ -49,11 +49,8 @@ const CreatePost = () => {
     if (error) setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    // Destructure for easier validation
+  // Validate form data
+  const validateForm = () => {
     const {
       startHour,
       startMinute,
@@ -69,8 +66,7 @@ const CreatePost = () => {
     // Validate required fields
     if (!startHour || !endHour || !date || !location || !type) {
       setError('Please fill in all required fields.');
-      setIsSubmitting(false);
-      return;
+      return false;
     }
 
     // Validate date (must be current day or future)
@@ -80,8 +76,7 @@ const CreatePost = () => {
 
     if (selectedDate < today) {
       setError('Please select today or a future date.');
-      setIsSubmitting(false);
-      return;
+      return false;
     }
 
     // Validate date (up to 3 months in advance)
@@ -90,8 +85,7 @@ const CreatePost = () => {
 
     if (selectedDate > maxDate) {
       setError('You can only create posts up to 3 months in advance.');
-      setIsSubmitting(false);
-      return;
+      return false;
     }
 
     // Validate end time is after start time
@@ -102,20 +96,33 @@ const CreatePost = () => {
 
     if (endDateTime <= startDateTime) {
       setError('End time must be after start time.');
+      return false;
+    }
+
+    return true;
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    // Validate form data
+    if (!validateForm()) {
       setIsSubmitting(false);
       return;
     }
 
     try {
       // Format the date as YYYY-MM-DD string for Firestore
-      const formattedDate = date;
+      const formattedDate = formData.date;
 
       await addDoc(collection(db, 'posts'), {
-        startTime,
-        endTime,
+        startTime: `${formData.startHour}:${formData.startMinute} ${formData.startPeriod}`,
+        endTime: `${formData.endHour}:${formData.endMinute} ${formData.endPeriod}`,
         date: formattedDate, // Store as string for easier querying
-        location,
-        type,
+        location: formData.location,
+        type: formData.type,
         description: formData.description || '',
         userId: user.uid,
         userName: user.displayName || user.email,
