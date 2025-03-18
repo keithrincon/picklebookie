@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, db, googleProvider } from '../firebase/firebase'; // Import googleProvider
+import { auth, db, googleProvider } from '../firebase/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
   onAuthStateChanged,
-  updateProfile, // Import updateProfile
+  updateProfile,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -29,13 +29,16 @@ export const AuthProvider = ({ children }) => {
 
     // If no document exists, create one
     if (!userSnapshot.exists()) {
-      const { email, displayName } = user;
+      const { email, displayName, photoURL } = user;
       const createdAt = new Date();
 
       try {
         await setDoc(userRef, {
           name: displayName || additionalData.name || email.split('@')[0],
+          displayName:
+            displayName || additionalData.name || email.split('@')[0], // Ensure displayName is saved
           email,
+          photoURL: photoURL || additionalData.photoURL || null, // Save photoURL if available
           createdAt,
           ...additionalData,
         });
@@ -62,7 +65,7 @@ export const AuthProvider = ({ children }) => {
       await updateProfile(user, { displayName: username });
 
       // Store user details in Firestore
-      await createUserDocument(user, { username });
+      await createUserDocument(user, { name: username, displayName: username });
 
       return user;
     } catch (error) {
@@ -86,12 +89,15 @@ export const AuthProvider = ({ children }) => {
   // Google Sign-In function
   const logInWithGoogle = async () => {
     const userCredential = await signInWithPopup(auth, googleProvider);
+    const { displayName, photoURL } = userCredential.user;
+
     // Create user document after successful Google Sign-In
-    await createUserDocument(userCredential.user);
+    await createUserDocument(userCredential.user, { displayName, photoURL });
+
     return userCredential.user;
   };
 
-  // Log-out function (unchanged)
+  // Log-out function
   const logOut = () => {
     return signOut(auth);
   };

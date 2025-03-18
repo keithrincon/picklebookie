@@ -9,6 +9,8 @@ const SearchBar = () => {
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState(null);
   const searchRef = useRef(null);
+
+  // Initialize Firebase Functions
   const functions = getFunctions();
   const searchUsersFunction = httpsCallable(functions, 'searchUsers');
 
@@ -41,7 +43,6 @@ const SearchBar = () => {
       try {
         const response = await searchUsersFunction({ searchTerm });
         const searchResults = response.data.results || [];
-
         setResults(searchResults);
         setShowResults(true);
       } catch (error) {

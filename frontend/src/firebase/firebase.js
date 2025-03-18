@@ -1,16 +1,30 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  connectAuthEmulator,
+} from 'firebase/auth';
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  connectFirestoreEmulator,
+} from 'firebase/firestore';
+import { getStorage } from 'firebase/storage'; // Add this import
 import { getAnalytics } from 'firebase/analytics';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import {
+  getFunctions,
+  httpsCallable,
+  connectFunctionsEmulator,
+} from 'firebase/functions';
 
 // Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
   projectId: 'picklebookie',
-  storageBucket: 'picklebookie.firebasestorage.app',
+  storageBucket: 'picklebookie.appspot.com',
   messagingSenderId: '921444216697',
   appId: '1:921444216697:web:f0d6001e28e44a4bee89a8',
   measurementId: 'G-Z4SW9ZNEW2',
@@ -26,12 +40,20 @@ const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
 const functions = getFunctions(app);
+const storage = getStorage(app); // Initialize Firebase Storage
 
 // Create Google provider
 const googleProvider = new GoogleAuthProvider();
 
 // VAPID key for web push notifications
 const VAPID_KEY = process.env.REACT_APP_FIREBASE_VAPID_KEY;
+
+// Connect to emulators in development
+if (process.env.NODE_ENV === 'development') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099'); // Auth emulator
+  connectFirestoreEmulator(db, '127.0.0.1', 8080); // Firestore emulator
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001); // Functions emulator
+}
 
 // Function to request notification permission and save the token
 export const requestNotificationPermission = async () => {
@@ -94,4 +116,4 @@ export const onMessageListener = () => {
 export const sendNotification = httpsCallable(functions, 'sendNotification');
 
 // Export the objects
-export { app, auth, googleProvider, db, messaging };
+export { app, auth, googleProvider, db, messaging, storage, functions };

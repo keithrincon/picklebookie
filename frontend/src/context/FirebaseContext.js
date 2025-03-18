@@ -1,10 +1,19 @@
 import React, { createContext, useContext } from 'react';
-import { db, messaging } from '../firebase/firebase'; // Import other Firebase services
+import { db, messaging, auth, storage, functions } from '../firebase/firebase'; // Import all Firebase services you need
 
+// Create a context for Firebase
 const FirebaseContext = createContext();
 
 export const FirebaseProvider = ({ children }) => {
-  const value = { db, messaging }; // Add other Firebase services as needed
+  // Provide all Firebase services you need
+  const value = {
+    db, // Firestore
+    messaging, // Firebase Cloud Messaging
+    auth, // Firebase Authentication
+    storage, // Firebase Storage
+    functions, // Firebase Cloud Functions
+  };
+
   return (
     <FirebaseContext.Provider value={value}>
       {children}
