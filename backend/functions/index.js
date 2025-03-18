@@ -4,6 +4,7 @@ const { initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
 const logger = require('firebase-functions/logger');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 
 // Initialize Firebase Admin SDK
 initializeApp();
@@ -93,6 +94,120 @@ exports.sendFollowNotification = onDocumentCreated(
       logger.info('Follow notification sent successfully');
     } catch (error) {
       logger.error('Error sending follow notification:', error);
+    }
+  }
+);
+
+/**
+ * Scheduled function to clean up expired posts daily at midnight
+ */
+exports.cleanupExpiredPosts = onSchedule(
+  {
+    schedule: '0 0 * * *', // Daily at midnight
+    timeZone: 'America/New_York', // Adjust to your timezone
+  },
+  async (event) => {
+    const db = getFirestore();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      .toISOString()
+      .split('T')[0];
+
+    try {
+      // Get all posts from the past (before today)
+      const expiredPostsQuery = db
+        .collection('posts')
+        .where('date', '<', today);
+
+      const expiredPostsSnapshot = await expiredPostsQuery.get();
+
+      // Check if there are any expired posts
+      if (expiredPostsSnapshot.empty) {
+        logger.info('No expired posts found');
+        return null;
+      }
+
+      // Count how many posts will be deleted
+      logger.info(`Found ${expiredPostsSnapshot.size} expired posts to delete`);
+
+      // Batch delete to improve performance
+      const batch = db.batch();
+      expiredPostsSnapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // Commit the batch
+      await batch.commit();
+      logger.info(
+        `Successfully deleted ${expiredPostsSnapshot.size} expired posts`
+      );
+
+      return null;
+    } catch (error) {
+      logger.error('Error cleaning up expired posts:', error);
+      return null;
+    }
+  }
+);
+
+/**
+ * Scheduled function to clean up expired posts by end time, running hourly
+ */
+exports.cleanupExpiredPostsByEndTime = onSchedule(
+  {
+    schedule: '0 * * * *', // Run every hour
+    timeZone: 'America/New_York', // Adjust to your timezone
+  },
+  async (event) => {
+    const db = getFirestore();
+    const now = new Date();
+
+    try {
+      // Get all posts from today
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        .toISOString()
+        .split('T')[0];
+
+      const todayPostsQuery = db.collection('posts').where('date', '==', today);
+
+      const todayPostsSnapshot = await todayPostsQuery.get();
+
+      if (todayPostsSnapshot.empty) {
+        logger.info('No posts found for today');
+        return null;
+      }
+
+      // Format current time as HH:MM for comparison
+      const currentTime = now.toTimeString().substring(0, 5);
+
+      // Find posts where endTime has passed
+      const expiredPosts = todayPostsSnapshot.docs.filter((doc) => {
+        const data = doc.data();
+        return data.endTime < currentTime;
+      });
+
+      if (expiredPosts.length === 0) {
+        logger.info('No expired posts found for today');
+        return null;
+      }
+
+      logger.info(`Found ${expiredPosts.length} expired posts for today`);
+
+      // Batch delete
+      const batch = db.batch();
+      expiredPosts.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      logger.info(
+        `Successfully deleted ${expiredPosts.length} expired posts for today`
+      );
+
+      return null;
+    } catch (error) {
+      logger.error('Error cleaning up expired posts by end time:', error);
+      return null;
     }
   }
 );
