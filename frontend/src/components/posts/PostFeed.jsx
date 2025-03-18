@@ -36,6 +36,7 @@ const PostFeed = () => {
         setFollowingList(followingIds);
       } catch (error) {
         console.error('Error fetching following list:', error);
+        setError('Failed to load following list. Please try again later.');
       }
     };
 
@@ -46,6 +47,9 @@ const PostFeed = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
+        setLoading(true);
+        setError('');
+
         let postsQuery;
 
         if (selectedDate) {
