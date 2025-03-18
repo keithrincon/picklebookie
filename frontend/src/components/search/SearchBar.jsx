@@ -100,6 +100,12 @@ const SearchBar = () => {
     }
   };
 
+  // Debug function to log what we're receiving
+  const debugResults = () => {
+    console.log('Current results:', results);
+    return results && results.length > 0;
+  };
+
   return (
     <div className='relative' ref={searchRef}>
       <div className='relative'>
@@ -146,7 +152,7 @@ const SearchBar = () => {
           <div className='p-3 text-center text-gray-500'>Loading...</div>
         ) : error ? (
           <div className='p-3 text-center text-red-500'>{error}</div>
-        ) : results.length > 0 ? (
+        ) : debugResults() ? (
           results.map((user) => (
             <Link
               key={user.id}
@@ -157,21 +163,26 @@ const SearchBar = () => {
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
-                  alt={user.displayName}
+                  alt={user.displayName || 'User'}
                   className='w-8 h-8 rounded-full mr-2'
-                  onError={(e) => (e.target.src = '/default-avatar.png')}
+                  onError={(e) => {
+                    e.target.src = '/default-avatar.png';
+                  }}
                 />
               ) : (
                 <div className='w-8 h-8 rounded-full mr-2 bg-gray-200 flex items-center justify-center'>
                   <span className='text-sm font-medium text-gray-600'>
-                    {user.displayName?.charAt(0) || '?'}
+                    {user.displayName ? user.displayName.charAt(0) : '?'}
                   </span>
                 </div>
               )}
-              <div>
+              <div className='flex-1'>
                 <div className='font-medium text-gray-800'>
-                  {user.displayName}
+                  {user.displayName || 'Unnamed User'}
                 </div>
+                {user.username && (
+                  <div className='text-sm text-gray-500'>@{user.username}</div>
+                )}
               </div>
             </Link>
           ))
