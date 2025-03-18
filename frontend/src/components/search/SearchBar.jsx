@@ -14,7 +14,7 @@ const SearchBar = () => {
   const functions = getFunctions();
   const searchUsersFunction = httpsCallable(functions, 'searchUsers');
 
-  // Close results when clicking outside
+  // Close results when clicking outside - only add listener when results are showing
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -22,11 +22,15 @@ const SearchBar = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Only add the listener when results are showing
+    if (showResults) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [showResults]); // Only depends on showResults state
 
   // Debounce search with cloud function
   useEffect(() => {
@@ -34,6 +38,7 @@ const SearchBar = () => {
       if (searchTerm.length < 2) {
         setResults([]);
         setError(null);
+        setShowResults(false); // Hide results when search term is too short
         return;
       }
 
@@ -42,9 +47,9 @@ const SearchBar = () => {
 
       try {
         const response = await searchUsersFunction({ searchTerm });
-        console.log('Search response:', response.data); // Log the response
         const searchResults = response.data.results || [];
         setResults(searchResults);
+        // Only show results after successful fetch
         setShowResults(true);
       } catch (error) {
         console.error('Search error details:', error);
@@ -58,9 +63,6 @@ const SearchBar = () => {
     const timer = setTimeout(() => {
       if (searchTerm.length >= 2) {
         performSearch();
-      } else {
-        setResults([]);
-        setShowResults(false);
       }
     }, 300);
 
@@ -68,14 +70,16 @@ const SearchBar = () => {
   }, [searchTerm, searchUsersFunction]);
 
   const handleInputFocus = () => {
-    if (searchTerm.length >= 2) {
+    // Only show results if we already have some and search term is valid
+    if (searchTerm.length >= 2 && results.length > 0) {
       setShowResults(true);
     }
   };
 
   const handleSearchButtonClick = () => {
     if (searchTerm.length >= 2) {
-      setShowResults(true);
+      // Toggle results visibility on button click
+      setShowResults((prev) => !prev);
     }
   };
 
