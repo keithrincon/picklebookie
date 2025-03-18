@@ -22,7 +22,6 @@ const SearchBar = () => {
       }
     };
 
-    // Only add the listener when results are showing
     if (showResults) {
       document.addEventListener('mousedown', handleClickOutside);
     }
@@ -30,7 +29,7 @@ const SearchBar = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showResults]); // Only depends on showResults state
+  }, [showResults]);
 
   // Debounce search with cloud function
   useEffect(() => {
@@ -38,7 +37,7 @@ const SearchBar = () => {
       if (searchTerm.length < 2) {
         setResults([]);
         setError(null);
-        setShowResults(false); // Hide results when search term is too short
+        setShowResults(false);
         return;
       }
 
@@ -49,12 +48,17 @@ const SearchBar = () => {
         const response = await searchUsersFunction({ searchTerm });
         const searchResults = response.data.results || [];
         setResults(searchResults);
-        // Only show results after successful fetch
-        setShowResults(true);
+        // Delay showing results to avoid flickering
+        setTimeout(() => {
+          if (searchTerm.length >= 2) {
+            setShowResults(true);
+          }
+        }, 100);
       } catch (error) {
         console.error('Search error details:', error);
         setError(`Search failed: ${error.message}`);
         setResults([]);
+        setShowResults(false);
       } finally {
         setIsLoading(false);
       }
@@ -70,16 +74,14 @@ const SearchBar = () => {
   }, [searchTerm, searchUsersFunction]);
 
   const handleInputFocus = () => {
-    // Only show results if we already have some and search term is valid
-    if (searchTerm.length >= 2 && results.length > 0) {
+    if (searchTerm.length >= 2 && results.length > 0 && !showResults) {
       setShowResults(true);
     }
   };
 
   const handleSearchButtonClick = () => {
-    if (searchTerm.length >= 2) {
-      // Toggle results visibility on button click
-      setShowResults((prev) => !prev);
+    if (searchTerm.length >= 2 && !showResults) {
+      setShowResults(true);
     }
   };
 
