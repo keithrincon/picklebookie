@@ -19,6 +19,9 @@ const PostFeed = () => {
   const [followingList, setFollowingList] = useState([]);
   const { user } = useAuth();
 
+  // Set max date to today
+  const today = new Date().toISOString().split('T')[0];
+
   // Fetch the current user's following list
   useEffect(() => {
     const fetchFollowingList = async () => {
@@ -62,6 +65,12 @@ const PostFeed = () => {
   // Fetch posts
   useEffect(() => {
     const fetchPosts = async () => {
+      if (!user) {
+        setError('You must be logged in to view posts.');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError('');
@@ -69,31 +78,52 @@ const PostFeed = () => {
         let postsQuery;
 
         if (selectedDate) {
+          // Format the date to match how it's stored in Firestore
           const selectedDateObj = new Date(selectedDate);
-          const formattedDate = selectedDateObj.toISOString().split('T')[0];
+          // Make sure we're using the format that matches your Firestore documents
+          const formattedDate = `${selectedDateObj.getFullYear()}-${String(
+            selectedDateObj.getMonth() + 1
+          ).padStart(2, '0')}-${String(selectedDateObj.getDate()).padStart(
+            2,
+            '0'
+          )}`;
+
+          console.log('Querying for date:', formattedDate);
 
           postsQuery = query(
             collection(db, 'posts'),
-            where('date', '==', formattedDate),
-            orderBy('createdAt', 'desc')
+            where('date', '==', formattedDate)
           );
         } else {
-          postsQuery = query(
-            collection(db, 'posts'),
-            orderBy('date', 'asc'),
-            orderBy('createdAt', 'desc')
-          );
+          // Simplified query - just sort by date and then createdAt
+          // This avoids needing a composite index if one isn't set up
+          postsQuery = query(collection(db, 'posts'), orderBy('date', 'asc'));
         }
 
         const querySnapshot = await getDocs(postsQuery);
-        let postsList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt:
-            doc.data().createdAt instanceof Timestamp
-              ? doc.data().createdAt.toDate()
-              : new Date(doc.data().createdAt),
-        }));
+        console.log('Posts query results:', querySnapshot.size);
+
+        let postsList = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt:
+              data.createdAt instanceof Timestamp
+                ? data.createdAt.toDate()
+                : new Date(data.createdAt),
+          };
+        });
+
+        // Sort results client-side if needed
+        postsList.sort((a, b) => {
+          // First by date (ascending)
+          const dateComparison = a.date.localeCompare(b.date);
+          if (dateComparison !== 0) return dateComparison;
+
+          // Then by createdAt (descending)
+          return b.createdAt - a.createdAt;
+        });
 
         // Filter posts by following list if enabled
         if (showFollowingOnly) {
@@ -109,19 +139,19 @@ const PostFeed = () => {
         }
 
         setPosts(postsList);
+
+        if (postsList.length === 0) {
+          console.log('No posts found for the current query.');
+        }
       } catch (error) {
+        console.error('Error fetching posts:', error);
         setError('Failed to load posts. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
-    if (user) {
-      fetchPosts();
-    } else {
-      setError('You must be logged in to view posts.');
-      setLoading(false);
-    }
+    fetchPosts();
   }, [selectedDate, showFollowingOnly, followingList, user]);
 
   // Format date for display
@@ -166,6 +196,7 @@ const PostFeed = () => {
             onChange={(e) => setSelectedDate(e.target.value)}
             className='px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             aria-label='Filter by date'
+            max={today}
           />
           {selectedDate && (
             <button
