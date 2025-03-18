@@ -9,12 +9,13 @@ const SearchBar = () => {
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState(null);
   const searchRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
   // Initialize Firebase Functions
   const functions = getFunctions();
   const searchUsersFunction = httpsCallable(functions, 'searchUsers');
 
-  // Close results when clicking outside
+  // Close results when clicking outside - only add listener when results are showing
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -31,41 +32,53 @@ const SearchBar = () => {
     };
   }, [showResults]);
 
-  // Debounce search with cloud function
+  // Separate effect to handle search visibility
+  useEffect(() => {
+    if (searchTerm.length < 2) {
+      setShowResults(false);
+    } else if (results.length > 0 && !isLoading) {
+      setShowResults(true);
+    }
+  }, [searchTerm, results, isLoading]);
+
+  // Search effect - completely separated from visibility logic
   useEffect(() => {
     const performSearch = async () => {
       if (searchTerm.length < 2) {
         setResults([]);
         setError(null);
-        setShowResults(false);
         return;
       }
 
       setIsLoading(true);
-      setError(null);
 
       try {
         const response = await searchUsersFunction({ searchTerm });
         const searchResults = response.data.results || [];
         setResults(searchResults);
-        setShowResults(true); // Show results only after successful fetch
       } catch (error) {
         console.error('Search error details:', error);
         setError(`Search failed: ${error.message}`);
         setResults([]);
-        setShowResults(false); // Hide results on error
       } finally {
         setIsLoading(false);
       }
     };
 
-    const timer = setTimeout(() => {
-      if (searchTerm.length >= 2) {
-        performSearch();
-      }
-    }, 300); // Adjust debounce delay as needed
+    // Clear previous timeout to prevent race conditions
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
-    return () => clearTimeout(timer);
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch();
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, [searchTerm, searchUsersFunction]);
 
   const handleInputFocus = () => {
@@ -76,7 +89,7 @@ const SearchBar = () => {
 
   const handleSearchButtonClick = () => {
     if (searchTerm.length >= 2) {
-      setShowResults((prev) => !prev); // Toggle visibility
+      setShowResults(true);
     }
   };
 
@@ -113,48 +126,51 @@ const SearchBar = () => {
         </button>
       </div>
 
-      {showResults && (
-        <div className='absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto dropdown-container'>
-          {isLoading ? (
-            <div className='p-3 text-center text-gray-500'>Loading...</div>
-          ) : error ? (
-            <div className='p-3 text-center text-red-500'>{error}</div>
-          ) : results.length > 0 ? (
-            results.map((user) => (
-              <Link
-                key={user.id}
-                to={`/profile/${user.id}`}
-                className='flex items-center p-3 hover:bg-gray-100 border-b border-gray-100 last:border-none'
-                onClick={() => setShowResults(false)}
-              >
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName}
-                    className='w-8 h-8 rounded-full mr-2'
-                    onError={(e) => (e.target.src = '/default-avatar.png')}
-                  />
-                ) : (
-                  <div className='w-8 h-8 rounded-full mr-2 bg-gray-200 flex items-center justify-center'>
-                    <span className='text-sm font-medium text-gray-600'>
-                      {user.displayName?.charAt(0) || '?'}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <div className='font-medium text-gray-800'>
-                    {user.displayName}
-                  </div>
+      {/* Always render the dropdown container but conditionally show content */}
+      <div
+        className={`absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto ${
+          showResults ? 'block' : 'hidden'
+        }`}
+      >
+        {isLoading ? (
+          <div className='p-3 text-center text-gray-500'>Loading...</div>
+        ) : error ? (
+          <div className='p-3 text-center text-red-500'>{error}</div>
+        ) : results.length > 0 ? (
+          results.map((user) => (
+            <Link
+              key={user.id}
+              to={`/profile/${user.id}`}
+              className='flex items-center p-3 hover:bg-gray-100 border-b border-gray-100 last:border-none'
+              onClick={() => setShowResults(false)}
+            >
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName}
+                  className='w-8 h-8 rounded-full mr-2'
+                  onError={(e) => (e.target.src = '/default-avatar.png')}
+                />
+              ) : (
+                <div className='w-8 h-8 rounded-full mr-2 bg-gray-200 flex items-center justify-center'>
+                  <span className='text-sm font-medium text-gray-600'>
+                    {user.displayName?.charAt(0) || '?'}
+                  </span>
                 </div>
-              </Link>
-            ))
-          ) : searchTerm.length >= 2 ? (
-            <div className='p-3 text-center text-gray-500'>No users found</div>
-          ) : null}
-        </div>
-      )}
+              )}
+              <div>
+                <div className='font-medium text-gray-800'>
+                  {user.displayName}
+                </div>
+              </div>
+            </Link>
+          ))
+        ) : searchTerm.length >= 2 ? (
+          <div className='p-3 text-center text-gray-500'>No users found</div>
+        ) : null}
+      </div>
     </div>
   );
 };
 
-export default React.memo(SearchBar);
+export default SearchBar;
