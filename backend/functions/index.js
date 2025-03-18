@@ -48,6 +48,61 @@ exports.sendNotification = onCall(async (request) => {
 });
 
 /**
+ * HTTP-triggered function to search for users by displayName.
+ * This function allows searching for users without requiring direct access to the users collection.
+ */
+exports.searchUsers = onCall(async (request) => {
+  // Ensure the request is authenticated
+  if (!request.auth) {
+    throw new Error('Authentication required');
+  }
+
+  const { searchTerm } = request.data;
+
+  // Validate input
+  if (!searchTerm || typeof searchTerm !== 'string' || searchTerm.length < 2) {
+    throw new Error(
+      'Invalid search term. Must be a string with at least 2 characters.'
+    );
+  }
+
+  const db = getFirestore();
+
+  try {
+    logger.info(
+      `Searching for users with displayName containing: ${searchTerm}`
+    );
+
+    // Query users where displayName starts with the search term
+    const usersQuery = db
+      .collection('users')
+      .where('displayName', '>=', searchTerm)
+      .where('displayName', '<=', searchTerm + '\uf8ff')
+      .limit(10);
+
+    const querySnapshot = await usersQuery.get();
+
+    logger.info(`Found ${querySnapshot.size} users matching the search term`);
+
+    // Map the results to include only public information
+    const results = querySnapshot.docs.map((doc) => {
+      const userData = doc.data();
+      return {
+        id: doc.id,
+        displayName: userData.displayName,
+        photoURL: userData.photoURL,
+        // Do not include sensitive information like email, fcmToken, etc.
+      };
+    });
+
+    return { results };
+  } catch (error) {
+    logger.error('Error searching for users:', error);
+    throw new Error('Failed to search for users');
+  }
+});
+
+/**
  * Firestore-triggered function to send a notification when a new follower is added.
  */
 exports.sendFollowNotification = onDocumentCreated(
