@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../../firebase/firebase';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const SearchBar = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,6 +9,8 @@ const SearchBar = () => {
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState(null);
   const searchRef = useRef(null);
+  const functions = getFunctions();
+  const searchUsersFunction = httpsCallable(functions, 'searchUsers');
 
   // Close results when clicking outside
   useEffect(() => {
@@ -25,9 +26,9 @@ const SearchBar = () => {
     };
   }, []);
 
-  // Debounce search - fixed implementation
+  // Debounce search with cloud function
   useEffect(() => {
-    const searchUsers = async () => {
+    const performSearch = async () => {
       if (searchTerm.length < 2) {
         setResults([]);
         setError(null);
@@ -38,28 +39,14 @@ const SearchBar = () => {
       setError(null);
 
       try {
-        // Consider creating a lowercase field in your database for better searching
-        const searchTermLower = searchTerm.toLowerCase();
-
-        // Try to search by displayName first
-        const usersQuery = query(
-          collection(db, 'users'),
-          where('displayName', '>=', searchTerm),
-          where('displayName', '<=', searchTerm + '\uf8ff'),
-          limit(10)
-        );
-
-        const querySnapshot = await getDocs(usersQuery);
-        const searchResults = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const response = await searchUsersFunction({ searchTerm });
+        const searchResults = response.data.results || [];
 
         setResults(searchResults);
         setShowResults(true);
       } catch (error) {
-        console.error('Search error:', error);
-        setError('Failed to search. Please try again.');
+        console.error('Search error details:', error);
+        setError(`Search failed: ${error.message}`);
         setResults([]);
       } finally {
         setIsLoading(false);
@@ -68,7 +55,7 @@ const SearchBar = () => {
 
     const timer = setTimeout(() => {
       if (searchTerm.length >= 2) {
-        searchUsers();
+        performSearch();
       } else {
         setResults([]);
         setShowResults(false);
@@ -76,7 +63,7 @@ const SearchBar = () => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, searchUsersFunction]);
 
   const handleInputFocus = () => {
     if (searchTerm.length >= 2) {
@@ -86,7 +73,6 @@ const SearchBar = () => {
 
   const handleSearchButtonClick = () => {
     if (searchTerm.length >= 2) {
-      // The search will be triggered by the useEffect
       setShowResults(true);
     }
   };
@@ -156,9 +142,6 @@ const SearchBar = () => {
                   <div className='font-medium text-gray-800'>
                     {user.displayName}
                   </div>
-                  {user.email && (
-                    <div className='text-sm text-gray-500'>{user.email}</div>
-                  )}
                 </div>
               </Link>
             ))
