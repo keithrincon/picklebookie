@@ -3,6 +3,7 @@ module.exports = {
     './src/**/*.{js,jsx,ts,tsx}', // Include all JS/JSX/TS/TSX files in the src folder
     './public/index.html', // Include your HTML file
   ],
+  darkMode: 'class', // Enable dark mode
   theme: {
     extend: {
       colors: {
@@ -28,7 +29,28 @@ module.exports = {
       fontFamily: {
         poppins: ['Poppins', 'sans-serif'], // Add Poppins font
       },
+      screens: {
+        xs: '480px', // Extra small screens
+        '3xl': '1920px', // Large desktop screens
+      },
+      spacing: {
+        72: '18rem', // Custom spacing value
+        84: '21rem',
+        96: '24rem',
+      },
+      keyframes: {
+        spin: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+      },
+      animation: {
+        spin: 'spin 2s linear infinite',
+      },
     },
   },
-  plugins: [], // Add Tailwind plugins if needed
+  plugins: [
+    require('@tailwindcss/forms'), // Add forms plugin
+    require('@tailwindcss/typography'), // Add typography plugin
+  ],
 };

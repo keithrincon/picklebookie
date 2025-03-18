@@ -3,6 +3,12 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import SearchBar from '../search/SearchBar';
 
+const UserAvatar = ({ user }) => (
+  <div className='w-8 h-8 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold'>
+    {(user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+  </div>
+);
+
 const Navbar = () => {
   const { user, logOut } = useAuth();
   const navigate = useNavigate();
@@ -25,18 +31,30 @@ const Navbar = () => {
     };
   }, []);
 
-  // Close dropdown when changing routes
+  // Close dropdown and mobile menu when changing routes
   useEffect(() => {
     setIsDropdownOpen(false);
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+  }, [mobileMenuOpen]);
+
   const handleLogout = async () => {
-    try {
-      await logOut();
-      navigate('/');
-    } catch (error) {
-      console.error('Error logging out:', error);
+    const confirmLogout = window.confirm('Are you sure you want to log out?');
+    if (confirmLogout) {
+      try {
+        await logOut();
+        navigate('/');
+      } catch (error) {
+        console.error('Error logging out:', error);
+      }
     }
   };
 
@@ -70,13 +88,13 @@ const Navbar = () => {
 
             {/* Desktop Menu Items */}
             <div className='flex items-center space-x-4'>
-              {/* User Actions */}
               {user ? (
                 <div className='relative' ref={dropdownRef}>
                   <button
                     onClick={toggleDropdown}
                     className='flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-pickle-green-dark transition-colors'
                     aria-expanded={isDropdownOpen}
+                    aria-haspopup='true'
                     aria-label='User menu'
                   >
                     {user.photoURL ? (
@@ -84,15 +102,12 @@ const Navbar = () => {
                         src={user.photoURL}
                         alt='Profile'
                         className='w-8 h-8 rounded-full'
+                        onError={(e) => {
+                          e.target.src = 'path/to/default/avatar.png';
+                        }}
                       />
                     ) : (
-                      <div className='w-8 h-8 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold'>
-                        {(
-                          user.displayName?.[0] ||
-                          user.email?.[0] ||
-                          'U'
-                        ).toUpperCase()}
-                      </div>
+                      <UserAvatar user={user} />
                     )}
                     <span className='hidden lg:inline'>
                       {user.displayName || user.email?.split('@')[0]}
@@ -155,16 +170,7 @@ const Navbar = () => {
           <div className='md:hidden flex items-center'>
             {user && (
               <div className='mr-4'>
-                <div
-                  className='w-8 h-8 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold'
-                  title={user.displayName || user.email}
-                >
-                  {(
-                    user.displayName?.[0] ||
-                    user.email?.[0] ||
-                    'U'
-                  ).toUpperCase()}
-                </div>
+                <UserAvatar user={user} />
               </div>
             )}
             <button
@@ -220,7 +226,7 @@ const Navbar = () => {
         <div className='px-2 pt-2 pb-3 space-y-1'>
           {/* Mobile Search */}
           <div className='px-3 py-2'>
-            <SearchBar />
+            <SearchBar id='mobile-search' />
           </div>
 
           {user ? (

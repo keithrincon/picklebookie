@@ -21,20 +21,37 @@ const PostFeed = () => {
 
   // Fetch the current user's following list
   useEffect(() => {
-    if (!user) return;
-
     const fetchFollowingList = async () => {
+      if (!user) {
+        console.log('User is not authenticated.');
+        setFollowingList([]);
+        return;
+      }
+
       try {
         const q = query(
           collection(db, 'followers'),
           where('followerId', '==', user.uid)
         );
         const querySnapshot = await getDocs(q);
+
+        console.log('Query Snapshot:', querySnapshot);
+
+        if (querySnapshot.empty) {
+          console.log('No followers found for the current user.');
+          setFollowingList([]);
+          return;
+        }
+
         const followingIds = querySnapshot.docs.map(
           (doc) => doc.data().followingId
         );
+
+        console.log('Following IDs:', followingIds);
+
         setFollowingList(followingIds);
       } catch (error) {
+        console.error('Error fetching following list:', error);
         setError('Failed to load following list. Please try again later.');
       }
     };
@@ -79,10 +96,16 @@ const PostFeed = () => {
         }));
 
         // Filter posts by following list if enabled
-        if (showFollowingOnly && followingList.length > 0) {
-          postsList = postsList.filter((post) =>
-            followingList.includes(post.userId)
-          );
+        if (showFollowingOnly) {
+          if (followingList.length > 0) {
+            postsList = postsList.filter((post) =>
+              followingList.includes(post.userId)
+            );
+          } else {
+            setError('You are not following anyone yet.');
+            setPosts([]);
+            return;
+          }
         }
 
         setPosts(postsList);
