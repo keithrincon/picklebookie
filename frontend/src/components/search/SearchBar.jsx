@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../firebase/firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
@@ -8,6 +8,7 @@ const SearchBar = () => {
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [error, setError] = useState(null);
   const searchRef = useRef(null);
 
   // Close results when clicking outside
@@ -24,46 +25,68 @@ const SearchBar = () => {
     };
   }, []);
 
-  // Updated search function to search by displayName
-  const handleSearch = useCallback(async () => {
-    if (searchTerm.length < 2) {
-      setResults([]);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const usersQuery = query(
-        collection(db, 'users'),
-        where('displayName', '>=', searchTerm),
-        where('displayName', '<=', searchTerm + '\uf8ff'),
-        limit(10)
-      );
-      const querySnapshot = await getDocs(usersQuery);
-      setResults(
-        querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-      );
-      setShowResults(true);
-    } catch (error) {
-      console.error('Search error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [searchTerm]);
-
-  // Debounce search
+  // Debounce search - fixed implementation
   useEffect(() => {
+    const searchUsers = async () => {
+      if (searchTerm.length < 2) {
+        setResults([]);
+        setError(null);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Consider creating a lowercase field in your database for better searching
+        const searchTermLower = searchTerm.toLowerCase();
+
+        // Try to search by displayName first
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('displayName', '>=', searchTerm),
+          where('displayName', '<=', searchTerm + '\uf8ff'),
+          limit(10)
+        );
+
+        const querySnapshot = await getDocs(usersQuery);
+        const searchResults = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setResults(searchResults);
+        setShowResults(true);
+      } catch (error) {
+        console.error('Search error:', error);
+        setError('Failed to search. Please try again.');
+        setResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     const timer = setTimeout(() => {
       if (searchTerm.length >= 2) {
-        handleSearch();
+        searchUsers();
+      } else {
+        setResults([]);
+        setShowResults(false);
       }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, handleSearch]);
+  }, [searchTerm]);
 
   const handleInputFocus = () => {
     if (searchTerm.length >= 2) {
+      setShowResults(true);
+    }
+  };
+
+  const handleSearchButtonClick = () => {
+    if (searchTerm.length >= 2) {
+      // The search will be triggered by the useEffect
       setShowResults(true);
     }
   };
@@ -80,7 +103,7 @@ const SearchBar = () => {
           className='w-full p-2 pl-3 pr-10 border rounded bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500'
         />
         <button
-          onClick={handleSearch}
+          onClick={handleSearchButtonClick}
           className='absolute right-2 top-1/2 transform -translate-y-1/2 text-green-600 hover:text-green-800'
           aria-label='Search'
         >
@@ -105,6 +128,8 @@ const SearchBar = () => {
         <div className='absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto'>
           {isLoading ? (
             <div className='p-3 text-center text-gray-500'>Loading...</div>
+          ) : error ? (
+            <div className='p-3 text-center text-red-500'>{error}</div>
           ) : results.length > 0 ? (
             results.map((user) => (
               <Link
@@ -113,13 +138,19 @@ const SearchBar = () => {
                 className='flex items-center p-3 hover:bg-gray-100 border-b border-gray-100 last:border-none'
                 onClick={() => setShowResults(false)}
               >
-                {user.photoURL && (
+                {user.photoURL ? (
                   <img
                     src={user.photoURL}
                     alt={user.displayName}
                     className='w-8 h-8 rounded-full mr-2'
                     onError={(e) => (e.target.src = '/default-avatar.png')}
                   />
+                ) : (
+                  <div className='w-8 h-8 rounded-full mr-2 bg-gray-200 flex items-center justify-center'>
+                    <span className='text-sm font-medium text-gray-600'>
+                      {user.displayName?.charAt(0) || '?'}
+                    </span>
+                  </div>
                 )}
                 <div>
                   <div className='font-medium text-gray-800'>
