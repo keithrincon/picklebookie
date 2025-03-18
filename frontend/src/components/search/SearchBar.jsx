@@ -45,6 +45,7 @@ const SearchBar = () => {
 
         try {
           const response = await searchUsersFunction({ searchTerm: term });
+          console.log('Raw API response:', response); // Debug the raw response
           resolve(response.data.results || []);
         } catch (error) {
           console.error('Search error:', error);
@@ -76,6 +77,7 @@ const SearchBar = () => {
 
       try {
         const searchResults = await debouncedSearch(searchTerm);
+        console.log('Processed search results:', searchResults); // Debug processed results
 
         // Only update results if the search term hasn't changed
         if (searchTerm.length >= 2) {
@@ -100,10 +102,25 @@ const SearchBar = () => {
     }
   };
 
-  // Debug function to log what we're receiving
-  const debugResults = () => {
-    console.log('Current results:', results);
-    return results && results.length > 0;
+  // Helper function to safely extract user properties
+  const getUserProperty = (user, property, fallback = '') => {
+    if (!user) return fallback;
+
+    // Try to access the property directly
+    if (user[property] !== undefined && user[property] !== null) {
+      return user[property];
+    }
+
+    // Try with data property (common in Firebase results)
+    if (
+      user.data &&
+      user.data[property] !== undefined &&
+      user.data[property] !== null
+    ) {
+      return user.data[property];
+    }
+
+    return fallback;
   };
 
   return (
@@ -139,7 +156,7 @@ const SearchBar = () => {
         </button>
       </div>
 
-      {/* Keep the results container stable in the DOM */}
+      {/* Results container */}
       <div
         className='absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto transition-opacity duration-150'
         style={{
@@ -152,40 +169,53 @@ const SearchBar = () => {
           <div className='p-3 text-center text-gray-500'>Loading...</div>
         ) : error ? (
           <div className='p-3 text-center text-red-500'>{error}</div>
-        ) : debugResults() ? (
-          results.map((user) => (
-            <Link
-              key={user.id}
-              to={`/profile/${user.id}`}
-              className='flex items-center p-3 hover:bg-gray-100 border-b border-gray-100 last:border-none'
-              onClick={() => setShowResults(false)}
-            >
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt={user.displayName || 'User'}
-                  className='w-8 h-8 rounded-full mr-2'
-                  onError={(e) => {
-                    e.target.src = '/default-avatar.png';
-                  }}
-                />
-              ) : (
-                <div className='w-8 h-8 rounded-full mr-2 bg-gray-200 flex items-center justify-center'>
-                  <span className='text-sm font-medium text-gray-600'>
-                    {user.displayName ? user.displayName.charAt(0) : '?'}
-                  </span>
-                </div>
-              )}
-              <div className='flex-1'>
-                <div className='font-medium text-gray-800'>
-                  {user.displayName || 'Unnamed User'}
-                </div>
-                {user.username && (
-                  <div className='text-sm text-gray-500'>@{user.username}</div>
+        ) : results && results.length > 0 ? (
+          results.map((user, index) => {
+            // Debug each user object
+            console.log(`User ${index}:`, user);
+
+            // Extract user properties safely
+            const userId = getUserProperty(user, 'id', `user-${index}`);
+            const displayName = getUserProperty(
+              user,
+              'displayName',
+              'Unknown User'
+            );
+            const username = getUserProperty(user, 'username', '');
+            const photoURL = getUserProperty(user, 'photoURL', '');
+
+            return (
+              <Link
+                key={userId}
+                to={`/profile/${userId}`}
+                className='flex items-center p-3 hover:bg-gray-100 border-b border-gray-100 last:border-none'
+                onClick={() => setShowResults(false)}
+              >
+                {photoURL ? (
+                  <img
+                    src={photoURL}
+                    alt={displayName}
+                    className='w-8 h-8 rounded-full mr-2'
+                    onError={(e) => {
+                      e.target.src = '/default-avatar.png';
+                    }}
+                  />
+                ) : (
+                  <div className='w-8 h-8 rounded-full mr-2 bg-gray-200 flex items-center justify-center'>
+                    <span className='text-sm font-medium text-gray-600'>
+                      {displayName.charAt(0) || '?'}
+                    </span>
+                  </div>
                 )}
-              </div>
-            </Link>
-          ))
+                <div className='flex-1'>
+                  <div className='font-medium text-gray-800'>{displayName}</div>
+                  {username && (
+                    <div className='text-sm text-gray-500'>@{username}</div>
+                  )}
+                </div>
+              </Link>
+            );
+          })
         ) : searchTerm.length >= 2 ? (
           <div className='p-3 text-center text-gray-500'>No users found</div>
         ) : null}
