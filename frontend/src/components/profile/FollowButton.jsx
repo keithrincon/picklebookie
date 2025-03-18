@@ -1,69 +1,65 @@
 import React, { useState, useEffect } from 'react';
+import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-  deleteDoc,
-  doc,
-} from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const FollowButton = ({ userId }) => {
   const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
-  const [followDocId, setFollowDocId] = useState(null);
 
+  // Create a composite ID for the followers document
+  const followDocId = user ? `${user.uid}_${userId}` : null;
+
+  // Check follow status on component mount or when user/userId changes
   useEffect(() => {
     const checkFollowStatus = async () => {
       if (!user) return;
 
       try {
-        const q = query(
-          collection(db, 'followers'),
-          where('followerId', '==', user.uid),
-          where('followingId', '==', userId)
-        );
-
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          setIsFollowing(true);
-          setFollowDocId(querySnapshot.docs[0].id);
-        }
+        const followDocRef = doc(db, 'followers', followDocId);
+        const followDocSnap = await getDoc(followDocRef);
+        setIsFollowing(followDocSnap.exists());
       } catch (error) {
         console.error('Error checking follow status:', error);
+        toast.error('Failed to check follow status. Please try again.');
       }
     };
 
     checkFollowStatus();
-  }, [user, userId]);
+  }, [user, userId, followDocId]);
 
+  // Handle follow action
   const handleFollow = async () => {
     if (!user) return;
 
     try {
-      const docRef = await addDoc(collection(db, 'followers'), {
+      const followDocRef = doc(db, 'followers', followDocId);
+      await setDoc(followDocRef, {
         followerId: user.uid,
         followingId: userId,
+        createdAt: new Date(),
       });
-      setFollowDocId(docRef.id);
       setIsFollowing(true);
+      toast.success('Followed successfully!');
     } catch (error) {
       console.error('Error following user:', error);
+      toast.error('Failed to follow user. Please try again.');
     }
   };
 
+  // Handle unfollow action
   const handleUnfollow = async () => {
-    if (!user || !followDocId) return;
+    if (!user) return;
 
     try {
-      await deleteDoc(doc(db, 'followers', followDocId));
-      setFollowDocId(null);
+      const followDocRef = doc(db, 'followers', followDocId);
+      await deleteDoc(followDocRef);
       setIsFollowing(false);
+      toast.success('Unfollowed successfully!');
     } catch (error) {
       console.error('Error unfollowing user:', error);
+      toast.error('Failed to unfollow user. Please try again.');
     }
   };
 

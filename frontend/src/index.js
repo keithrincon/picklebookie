@@ -8,7 +8,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import App from './App.jsx'; // Updated import
 import SignUp from './components/auth/SignUp.jsx'; // Updated import
 import LogIn from './components/auth/LogIn.jsx'; // Updated import
-import Profile from './components/profile/Profile.jsx'; // Updated import
+import Profile from './pages/Profile.jsx'; // Updated import
 
 // Register the service worker
 if ('serviceWorker' in navigator) {

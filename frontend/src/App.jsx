@@ -2,6 +2,8 @@ import React, { Suspense } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { FirebaseProvider } from './context/FirebaseContext';
 import { Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify'; // Import ToastContainer
+import 'react-toastify/dist/ReactToastify.css'; // Import the CSS
 import './index.css';
 
 import Navbar from './components/shared/Navbar';
@@ -54,6 +56,19 @@ function App() {
 
           {/* Footer */}
           <Footer />
+
+          {/* Toast Container for Notifications */}
+          <ToastContainer
+            position='top-right' // Position of the toasts
+            autoClose={3000} // Auto-close after 3 seconds
+            hideProgressBar={false} // Show progress bar
+            newestOnTop // New toasts appear on top
+            closeOnClick // Close toasts on click
+            rtl={false} // Left-to-right layout
+            pauseOnFocusLoss // Pause toasts when window loses focus
+            draggable // Allow dragging toasts
+            pauseOnHover // Pause toasts on hover
+          />
         </div>
       </FirebaseProvider>
     </AuthProvider>

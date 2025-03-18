@@ -4,64 +4,133 @@ import { collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 
 const CreatePost = () => {
-  const [hour, setHour] = useState('');
-  const [minute, setMinute] = useState('');
-  const [period, setPeriod] = useState('AM');
-  const [location, setLocation] = useState('');
-  const [type, setType] = useState('');
+  // Form state
+  const [formData, setFormData] = useState({
+    startHour: '',
+    startMinute: '00',
+    startPeriod: 'AM',
+    endHour: '',
+    endMinute: '00',
+    endPeriod: 'PM',
+    date: '',
+    location: '',
+    type: 'Practice',
+    description: '',
+  });
+
+  // UI state
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
-  // Generate hour options: 1-12
+  // Options for select fields
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-
-  // Generate minute options: 00-55 in 5-minute increments
   const minutes = Array.from({ length: 12 }, (_, i) => i * 5).map((m) =>
     m < 10 ? `0${m}` : `${m}`
   );
+  const gameTypes = ['Practice', 'Competition', 'Social', 'Lesson'];
+  const locationSuggestions = [
+    'Main Court - Downtown',
+    'Memorial Park Courts',
+    'Riverside Recreation Center',
+    'Community Center',
+    'Oak Park Courts',
+  ];
+
+  // Handle all form changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+    // Clear any error messages when user makes changes
+    if (error) setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Validate time selections
-    if (!hour || !minute) {
-      setError('Please select both hour and minute for the time.');
+    // Destructure for easier validation
+    const {
+      startHour,
+      startMinute,
+      startPeriod,
+      endHour,
+      endMinute,
+      endPeriod,
+      date,
+      location,
+      type,
+    } = formData;
+
+    // Validate required fields
+    if (!startHour || !endHour || !date || !location || !type) {
+      setError('Please fill in all required fields.');
       setIsSubmitting(false);
       return;
     }
 
-    // Validate other fields
-    if (!location || !type) {
-      setError('Please fill in all fields.');
+    // Validate date (must be current day or future)
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      setError('Please select today or a future date.');
       setIsSubmitting(false);
       return;
     }
 
-    const formattedTime = `${hour}:${minute} ${period}`;
+    // Validate date (up to 3 months in advance)
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 3);
+
+    if (selectedDate > maxDate) {
+      setError('You can only create posts up to 3 months in advance.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const startTime = `${startHour}:${startMinute} ${startPeriod}`;
+    const endTime = `${endHour}:${endMinute} ${endPeriod}`;
 
     try {
+      // Format the date as YYYY-MM-DD string for Firestore
+      const formattedDate = date;
+
       await addDoc(collection(db, 'posts'), {
-        time: formattedTime,
+        startTime,
+        endTime,
+        date: formattedDate, // Store as string for easier querying
         location,
         type,
+        description: formData.description || '',
         userId: user.uid,
         userName: user.displayName || user.email,
         createdAt: new Date(),
       });
 
       // Clear form
-      setHour('');
-      setMinute('');
-      setPeriod('AM');
-      setLocation('');
-      setType('');
+      setFormData({
+        startHour: '',
+        startMinute: '00',
+        startPeriod: 'AM',
+        endHour: '',
+        endMinute: '00',
+        endPeriod: 'PM',
+        date: '',
+        location: '',
+        type: 'Practice',
+        description: '',
+      });
+
       setError('');
       setSuccess('Your game post has been created!');
 
-      // Clear success message after 3 seconds
+      // Clear success message after a few seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error creating post:', error);
@@ -76,109 +145,210 @@ const CreatePost = () => {
       <h2 className='text-2xl font-bold text-pickle-green mb-6 font-poppins'>
         Create a Game Post
       </h2>
-      <form onSubmit={handleSubmit} className='space-y-4'>
-        {error && <p className='text-red-500 text-sm'>{error}</p>}
-        {success && <p className='text-green-500 text-sm'>{success}</p>}
 
+      {/* Form status messages */}
+      {error && (
+        <div className='mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded'>
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className='mb-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded'>
+          {success}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className='space-y-4'>
+        {/* Date Picker */}
         <div>
           <label className='block text-sm font-medium text-gray-700 mb-2'>
-            Time
+            Date <span className='text-red-500'>*</span>
           </label>
-          <div className='flex space-x-2'>
-            {/* Hour Selector */}
-            <div className='w-1/3'>
-              <select
-                value={hour}
-                onChange={(e) => setHour(e.target.value)}
-                className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
-                required
-              >
-                <option value='' disabled>
-                  Hour
-                </option>
-                {hours.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <input
+            type='date'
+            name='date'
+            value={formData.date}
+            onChange={handleChange}
+            min={new Date().toISOString().split('T')[0]}
+            className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+            required
+          />
+        </div>
 
-            {/* Minute Selector */}
-            <div className='w-1/3'>
-              <select
-                value={minute}
-                onChange={(e) => setMinute(e.target.value)}
-                className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
-                required
-              >
-                <option value='' disabled>
-                  Min
-                </option>
-                {minutes.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
+        {/* Time Selection */}
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          {/* Start Time */}
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              Start Time <span className='text-red-500'>*</span>
+            </label>
+            <div className='flex space-x-2'>
+              <div className='w-1/3'>
+                <select
+                  name='startHour'
+                  value={formData.startHour}
+                  onChange={handleChange}
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                  required
+                >
+                  <option value='' disabled>
+                    Hour
                   </option>
-                ))}
-              </select>
-            </div>
+                  {hours.map((h) => (
+                    <option key={`start-${h}`} value={h}>
+                      {h}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* AM/PM Selector */}
-            <div className='w-1/3'>
-              <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
-              >
-                <option value='AM'>AM</option>
-                <option value='PM'>PM</option>
-              </select>
+              <div className='w-1/3'>
+                <select
+                  name='startMinute'
+                  value={formData.startMinute}
+                  onChange={handleChange}
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                >
+                  {minutes.map((m) => (
+                    <option key={`start-min-${m}`} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className='w-1/3'>
+                <select
+                  name='startPeriod'
+                  value={formData.startPeriod}
+                  onChange={handleChange}
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                >
+                  <option value='AM'>AM</option>
+                  <option value='PM'>PM</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* End Time */}
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              End Time <span className='text-red-500'>*</span>
+            </label>
+            <div className='flex space-x-2'>
+              <div className='w-1/3'>
+                <select
+                  name='endHour'
+                  value={formData.endHour}
+                  onChange={handleChange}
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                  required
+                >
+                  <option value='' disabled>
+                    Hour
+                  </option>
+                  {hours.map((h) => (
+                    <option key={`end-${h}`} value={h}>
+                      {h}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className='w-1/3'>
+                <select
+                  name='endMinute'
+                  value={formData.endMinute}
+                  onChange={handleChange}
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                >
+                  {minutes.map((m) => (
+                    <option key={`end-min-${m}`} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className='w-1/3'>
+                <select
+                  name='endPeriod'
+                  value={formData.endPeriod}
+                  onChange={handleChange}
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                >
+                  <option value='AM'>AM</option>
+                  <option value='PM'>PM</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Location */}
         <div>
-          <label
-            htmlFor='location'
-            className='block text-sm font-medium text-gray-700'
-          >
-            Location
+          <label className='block text-sm font-medium text-gray-700 mb-2'>
+            Location <span className='text-red-500'>*</span>
           </label>
           <input
             type='text'
-            id='location'
-            aria-label='Location'
-            placeholder='Location (e.g., Sun Oaks)'
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+            name='location'
+            value={formData.location}
+            onChange={handleChange}
+            list='locationSuggestions'
+            placeholder='Enter or select a location'
+            className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             required
           />
+          <datalist id='locationSuggestions'>
+            {locationSuggestions.map((loc) => (
+              <option key={loc} value={loc} />
+            ))}
+          </datalist>
         </div>
 
+        {/* Game Type */}
         <div>
-          <label
-            htmlFor='type'
-            className='block text-sm font-medium text-gray-700'
-          >
-            Game Type
+          <label className='block text-sm font-medium text-gray-700 mb-2'>
+            Game Type <span className='text-red-500'>*</span>
           </label>
-          <input
-            type='text'
-            id='type'
-            aria-label='Game Type'
-            placeholder='Game Type (e.g., Doubles)'
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+          <select
+            name='type'
+            value={formData.type}
+            onChange={handleChange}
+            className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             required
+          >
+            {gameTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Description - New Field */}
+        <div>
+          <label className='block text-sm font-medium text-gray-700 mb-2'>
+            Description <span className='text-gray-400'>(optional)</span>
+          </label>
+          <textarea
+            name='description'
+            value={formData.description}
+            onChange={handleChange}
+            placeholder='Add any additional details about this game...'
+            rows={3}
+            className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
           />
         </div>
 
+        {/* Submit Button */}
         <button
           type='submit'
           disabled={isSubmitting}
-          className='w-full bg-pickle-green text-white py-2 px-4 rounded-md hover:bg-pickle-green-dark focus:outline-none focus:ring-2 focus:ring-pickle-green-light focus:ring-offset-2'
+          className='w-full bg-pickle-green text-white py-2 px-4 rounded-md hover:bg-pickle-green-dark focus:outline-none focus:ring-2 focus:ring-pickle-green-light focus:ring-offset-2 transition-colors disabled:opacity-75'
         >
           {isSubmitting ? (
             <div className='flex justify-center items-center'>
