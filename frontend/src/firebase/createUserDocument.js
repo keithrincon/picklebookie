@@ -16,11 +16,11 @@ export const createUserDocument = async (user, additionalData = {}) => {
 
     try {
       await setDoc(userRef, {
-        displayName:
-          displayName || additionalData.username || email.split('@')[0], // Fallback to email if no displayName or username
+        name: additionalData.name || displayName || email.split('@')[0],
+        username: displayName || additionalData.username || email.split('@')[0],
         email,
         createdAt,
-        ...additionalData, // Store any extra user data
+        ...additionalData,
       });
       console.log('User document created successfully for:', email);
       return userRef;
