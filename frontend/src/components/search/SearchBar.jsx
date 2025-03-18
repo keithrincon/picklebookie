@@ -24,7 +24,7 @@ const SearchBar = () => {
     };
   }, []);
 
-  // Updated search function to search by name instead of username
+  // Updated search function to search by displayName
   const handleSearch = useCallback(async () => {
     if (searchTerm.length < 2) {
       setResults([]);
@@ -35,8 +35,8 @@ const SearchBar = () => {
     try {
       const usersQuery = query(
         collection(db, 'users'),
-        where('name', '>=', searchTerm),
-        where('name', '<=', searchTerm + '\uf8ff'),
+        where('displayName', '>=', searchTerm),
+        where('displayName', '<=', searchTerm + '\uf8ff'),
         limit(10)
       );
       const querySnapshot = await getDocs(usersQuery);
@@ -73,7 +73,7 @@ const SearchBar = () => {
       <div className='relative'>
         <input
           type='text'
-          placeholder='Search users by name...'
+          placeholder='Search users by username...'
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={handleInputFocus}
@@ -116,13 +116,15 @@ const SearchBar = () => {
                 {user.photoURL && (
                   <img
                     src={user.photoURL}
-                    alt={user.name}
+                    alt={user.displayName}
                     className='w-8 h-8 rounded-full mr-2'
                     onError={(e) => (e.target.src = '/default-avatar.png')}
                   />
                 )}
                 <div>
-                  <div className='font-medium text-gray-800'>{user.name}</div>
+                  <div className='font-medium text-gray-800'>
+                    {user.displayName}
+                  </div>
                   {user.email && (
                     <div className='text-sm text-gray-500'>{user.email}</div>
                   )}
