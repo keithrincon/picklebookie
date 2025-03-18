@@ -24,7 +24,7 @@ const SearchBar = () => {
     };
   }, []);
 
-  // Simplified search function (only searches by username)
+  // Updated search function to search by name instead of username
   const handleSearch = useCallback(async () => {
     if (searchTerm.length < 2) {
       setResults([]);
@@ -35,8 +35,8 @@ const SearchBar = () => {
     try {
       const usersQuery = query(
         collection(db, 'users'),
-        where('username', '>=', searchTerm),
-        where('username', '<=', searchTerm + '\uf8ff'),
+        where('name', '>=', searchTerm),
+        where('name', '<=', searchTerm + '\uf8ff'),
         limit(10)
       );
       const querySnapshot = await getDocs(usersQuery);
@@ -73,7 +73,7 @@ const SearchBar = () => {
       <div className='relative'>
         <input
           type='text'
-          placeholder='Search users by username...'
+          placeholder='Search users by name...'
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={handleInputFocus}
@@ -123,10 +123,8 @@ const SearchBar = () => {
                 )}
                 <div>
                   <div className='font-medium text-gray-800'>{user.name}</div>
-                  {user.username && (
-                    <div className='text-sm text-gray-500'>
-                      @{user.username}
-                    </div>
+                  {user.email && (
+                    <div className='text-sm text-gray-500'>{user.email}</div>
                   )}
                 </div>
               </Link>
