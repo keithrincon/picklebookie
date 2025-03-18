@@ -29,7 +29,7 @@ const CreatePost = () => {
   const minutes = Array.from({ length: 12 }, (_, i) => i * 5).map((m) =>
     m < 10 ? `0${m}` : `${m}`
   );
-  const gameTypes = ['Practice', 'Singles', 'Doubles']; // Updated game types
+  const gameTypes = ['Practice', 'Singles', 'Doubles'];
   const locationSuggestions = [
     'Main Court - Downtown',
     'Memorial Park Courts',
@@ -45,7 +45,6 @@ const CreatePost = () => {
       ...formData,
       [name]: value,
     });
-    // Clear any error messages when user makes changes
     if (error) setError('');
   };
 
@@ -63,13 +62,11 @@ const CreatePost = () => {
       type,
     } = formData;
 
-    // Validate required fields
     if (!startHour || !endHour || !date || !location || !type) {
       setError('Please fill in all required fields.');
       return false;
     }
 
-    // Validate date (must be current day or future)
     const selectedDate = new Date(date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -79,7 +76,6 @@ const CreatePost = () => {
       return false;
     }
 
-    // Validate date (up to 3 months in advance)
     const maxDate = new Date();
     maxDate.setMonth(maxDate.getMonth() + 3);
 
@@ -88,7 +84,6 @@ const CreatePost = () => {
       return false;
     }
 
-    // Validate end time is after start time
     const startTime = `${startHour}:${startMinute} ${startPeriod}`;
     const endTime = `${endHour}:${endMinute} ${endPeriod}`;
     const startDateTime = new Date(`${date} ${startTime}`);
@@ -107,20 +102,18 @@ const CreatePost = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Validate form data
     if (!validateForm()) {
       setIsSubmitting(false);
       return;
     }
 
     try {
-      // Format the date as YYYY-MM-DD string for Firestore
       const formattedDate = formData.date;
 
       await addDoc(collection(db, 'posts'), {
         startTime: `${formData.startHour}:${formData.startMinute} ${formData.startPeriod}`,
         endTime: `${formData.endHour}:${formData.endMinute} ${formData.endPeriod}`,
-        date: formattedDate, // Store as string for easier querying
+        date: formattedDate,
         location: formData.location,
         type: formData.type,
         description: formData.description || '',
@@ -129,7 +122,6 @@ const CreatePost = () => {
         createdAt: new Date(),
       });
 
-      // Clear form
       setFormData({
         startHour: '',
         startMinute: '00',
@@ -145,8 +137,6 @@ const CreatePost = () => {
 
       setError('');
       setSuccess('Your game post has been created!');
-
-      // Clear success message after a few seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error creating post:', error);
@@ -162,7 +152,6 @@ const CreatePost = () => {
         Create a Game Post
       </h2>
 
-      {/* Form status messages */}
       {error && (
         <div className='mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded'>
           {error}
@@ -178,11 +167,15 @@ const CreatePost = () => {
       <form onSubmit={handleSubmit} className='space-y-4'>
         {/* Date Picker */}
         <div>
-          <label className='block text-sm font-medium text-gray-700 mb-2'>
+          <label
+            htmlFor='date'
+            className='block text-sm font-medium text-gray-700 mb-2'
+          >
             Date <span className='text-red-500'>*</span>
           </label>
           <input
             type='date'
+            id='date'
             name='date'
             value={formData.date}
             onChange={handleChange}
@@ -197,12 +190,16 @@ const CreatePost = () => {
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           {/* Start Time */}
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <label
+              htmlFor='startHour'
+              className='block text-sm font-medium text-gray-700 mb-2'
+            >
               Start Time <span className='text-red-500'>*</span>
             </label>
             <div className='flex space-x-2'>
               <div className='w-1/3'>
                 <select
+                  id='startHour'
                   name='startHour'
                   value={formData.startHour}
                   onChange={handleChange}
@@ -223,6 +220,7 @@ const CreatePost = () => {
 
               <div className='w-1/3'>
                 <select
+                  id='startMinute'
                   name='startMinute'
                   value={formData.startMinute}
                   onChange={handleChange}
@@ -239,6 +237,7 @@ const CreatePost = () => {
 
               <div className='w-1/3'>
                 <select
+                  id='startPeriod'
                   name='startPeriod'
                   value={formData.startPeriod}
                   onChange={handleChange}
@@ -254,12 +253,16 @@ const CreatePost = () => {
 
           {/* End Time */}
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <label
+              htmlFor='endHour'
+              className='block text-sm font-medium text-gray-700 mb-2'
+            >
               End Time <span className='text-red-500'>*</span>
             </label>
             <div className='flex space-x-2'>
               <div className='w-1/3'>
                 <select
+                  id='endHour'
                   name='endHour'
                   value={formData.endHour}
                   onChange={handleChange}
@@ -280,6 +283,7 @@ const CreatePost = () => {
 
               <div className='w-1/3'>
                 <select
+                  id='endMinute'
                   name='endMinute'
                   value={formData.endMinute}
                   onChange={handleChange}
@@ -296,6 +300,7 @@ const CreatePost = () => {
 
               <div className='w-1/3'>
                 <select
+                  id='endPeriod'
                   name='endPeriod'
                   value={formData.endPeriod}
                   onChange={handleChange}
@@ -312,11 +317,15 @@ const CreatePost = () => {
 
         {/* Location */}
         <div>
-          <label className='block text-sm font-medium text-gray-700 mb-2'>
+          <label
+            htmlFor='location'
+            className='block text-sm font-medium text-gray-700 mb-2'
+          >
             Location <span className='text-red-500'>*</span>
           </label>
           <input
             type='text'
+            id='location'
             name='location'
             value={formData.location}
             onChange={handleChange}
@@ -335,10 +344,14 @@ const CreatePost = () => {
 
         {/* Game Type */}
         <div>
-          <label className='block text-sm font-medium text-gray-700 mb-2'>
+          <label
+            htmlFor='type'
+            className='block text-sm font-medium text-gray-700 mb-2'
+          >
             Game Type <span className='text-red-500'>*</span>
           </label>
           <select
+            id='type'
             name='type'
             value={formData.type}
             onChange={handleChange}
@@ -354,12 +367,16 @@ const CreatePost = () => {
           </select>
         </div>
 
-        {/* Description - New Field */}
+        {/* Description */}
         <div>
-          <label className='block text-sm font-medium text-gray-700 mb-2'>
+          <label
+            htmlFor='description'
+            className='block text-sm font-medium text-gray-700 mb-2'
+          >
             Description <span className='text-gray-400'>(optional)</span>
           </label>
           <textarea
+            id='description'
             name='description'
             value={formData.description}
             onChange={handleChange}
