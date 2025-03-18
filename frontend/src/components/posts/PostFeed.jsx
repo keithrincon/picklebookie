@@ -7,8 +7,11 @@ import {
   getDocs,
   orderBy,
   Timestamp,
+  deleteDoc,
+  doc,
 } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 const PostFeed = () => {
   const [posts, setPosts] = useState([]);
@@ -19,8 +22,13 @@ const PostFeed = () => {
   const [followingList, setFollowingList] = useState([]);
   const { user } = useAuth();
 
-  // Set max date to today
+  // Get today's date and format it for the date input
   const today = new Date().toISOString().split('T')[0];
+
+  // Get future date (3 months from now) for max date selection
+  const threeMonthsFromNow = new Date();
+  threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+  const maxDate = threeMonthsFromNow.toISOString().split('T')[0];
 
   // Fetch the current user's following list
   useEffect(() => {
@@ -78,15 +86,8 @@ const PostFeed = () => {
         let postsQuery;
 
         if (selectedDate) {
-          // Format the date to match how it's stored in Firestore
-          const selectedDateObj = new Date(selectedDate);
-          // Make sure we're using the format that matches your Firestore documents
-          const formattedDate = `${selectedDateObj.getFullYear()}-${String(
-            selectedDateObj.getMonth() + 1
-          ).padStart(2, '0')}-${String(selectedDateObj.getDate()).padStart(
-            2,
-            '0'
-          )}`;
+          // Use the ISO format directly
+          const formattedDate = selectedDate;
 
           console.log('Querying for date:', formattedDate);
 
@@ -140,8 +141,12 @@ const PostFeed = () => {
 
         setPosts(postsList);
 
-        if (postsList.length === 0) {
-          console.log('No posts found for the current query.');
+        if (
+          postsList.length === 0 &&
+          showFollowingOnly &&
+          followingList.length > 0
+        ) {
+          setError('None of the people you follow have posted games.');
         }
       } catch (error) {
         console.error('Error fetching posts:', error);
@@ -170,16 +175,43 @@ const PostFeed = () => {
     setSelectedDate('');
   };
 
+  // Handle post deletion
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'posts', postId));
+      // Remove the post from the state
+      setPosts(posts.filter((post) => post.id !== postId));
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post. Please try again.');
+    }
+  };
+
+  // Toggle following filter (improved)
+  const toggleFollowingFilter = () => {
+    if (showFollowingOnly) {
+      // Just turn off the filter
+      setShowFollowingOnly(false);
+      setError('');
+    } else {
+      // Check if we have any people to follow before turning it on
+      if (followingList.length === 0) {
+        setError('You are not following anyone yet.');
+      }
+      setShowFollowingOnly(true);
+    }
+  };
+
   if (loading) {
     return (
       <div className='flex justify-center items-center h-64'>
         <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600'></div>
       </div>
     );
-  }
-
-  if (error) {
-    return <p className='text-center text-red-600 py-4'>{error}</p>;
   }
 
   return (
@@ -196,7 +228,8 @@ const PostFeed = () => {
             onChange={(e) => setSelectedDate(e.target.value)}
             className='px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             aria-label='Filter by date'
-            max={today}
+            min={today}
+            max={maxDate}
           />
           {selectedDate && (
             <button
@@ -211,7 +244,7 @@ const PostFeed = () => {
             <input
               type='checkbox'
               checked={showFollowingOnly}
-              onChange={() => setShowFollowingOnly(!showFollowingOnly)}
+              onChange={toggleFollowingFilter}
               className='form-checkbox h-5 w-5 text-green-600'
             />
             <span>Show only following</span>
@@ -219,8 +252,23 @@ const PostFeed = () => {
         </div>
       </div>
 
+      {/* Error message */}
+      {error && (
+        <div className='bg-red-50 border border-red-200 text-red-600 p-3 rounded-md mb-4'>
+          {error}
+          {showFollowingOnly && error.includes('not following anyone') && (
+            <button
+              onClick={() => setShowFollowingOnly(false)}
+              className='ml-2 underline text-pickle-green'
+            >
+              Show all games
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Posts List with count */}
-      {selectedDate && (
+      {selectedDate && !error && (
         <p className='text-gray-600 mb-2'>
           Showing {posts.length} game{posts.length !== 1 ? 's' : ''} for{' '}
           {formatDate(selectedDate)}
@@ -244,7 +292,13 @@ const PostFeed = () => {
                   </span>
                 </div>
                 <p className='text-sm text-gray-500'>
-                  Posted by {post.userName || 'Unknown User'}
+                  Posted by{' '}
+                  <Link
+                    to={`/profile/${post.userId}`}
+                    className='text-pickle-green hover:underline'
+                  >
+                    {post.userName || 'Unknown User'}
+                  </Link>
                 </p>
               </div>
 
@@ -264,10 +318,31 @@ const PostFeed = () => {
                   <p className='text-gray-600 text-sm'>Location</p>
                   <p className='font-medium'>{post.location}</p>
                 </div>
+
+                {/* Show description if it exists */}
+                {post.description && (
+                  <div className='mt-3'>
+                    <p className='text-gray-600 text-sm'>Description</p>
+                    <p className='text-sm'>{post.description}</p>
+                  </div>
+                )}
               </div>
 
-              <div className='mt-4 pt-3 border-t text-xs text-gray-500'>
-                Created {post.createdAt.toLocaleString()}
+              <div className='mt-4 pt-3 border-t flex justify-between items-center'>
+                <span className='text-xs text-gray-500'>
+                  Created {post.createdAt.toLocaleString()}
+                </span>
+
+                {/* Show delete button if current user is the post creator */}
+                {user && post.userId === user.uid && (
+                  <button
+                    onClick={() => handleDeletePost(post.id)}
+                    className='text-xs text-red-600 hover:text-red-800'
+                    aria-label='Delete post'
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -276,6 +351,9 @@ const PostFeed = () => {
         <div className='bg-white p-8 rounded-lg shadow-md text-center'>
           <p className='text-gray-500 mb-2'>
             No games available{selectedDate ? ' for the selected date' : ''}.
+            {showFollowingOnly &&
+              !error &&
+              ' Try disabling the "Show only following" filter.'}
           </p>
           {selectedDate && (
             <button
@@ -283,6 +361,14 @@ const PostFeed = () => {
               className='text-green-600 hover:text-green-700 underline text-sm'
             >
               View all games
+            </button>
+          )}
+          {showFollowingOnly && !error && (
+            <button
+              onClick={() => setShowFollowingOnly(false)}
+              className='text-green-600 hover:text-green-700 underline text-sm ml-2'
+            >
+              Show all users' games
             </button>
           )}
         </div>
