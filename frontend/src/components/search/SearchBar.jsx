@@ -9,13 +9,14 @@ const SearchBar = () => {
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState(null);
   const searchRef = useRef(null);
-  const searchTimeoutRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+  const prevResultsRef = useRef([]);
 
   // Initialize Firebase Functions
   const functions = getFunctions();
   const searchUsersFunction = httpsCallable(functions, 'searchUsers');
 
-  // Close results when clicking outside - only add listener when results are showing
+  // Close results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -23,72 +24,78 @@ const SearchBar = () => {
       }
     };
 
-    if (showResults) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showResults]);
+  }, []);
 
-  // Separate effect to handle search visibility
-  useEffect(() => {
-    if (searchTerm.length < 2) {
-      setShowResults(false);
-    } else if (results.length > 0 && !isLoading) {
-      setShowResults(true);
+  // Debounced search function
+  const debouncedSearch = (term) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
-  }, [searchTerm, results, isLoading]);
 
-  // Search effect - completely separated from visibility logic
+    return new Promise((resolve) => {
+      debounceTimerRef.current = setTimeout(async () => {
+        if (term.length < 2) {
+          resolve([]);
+          return;
+        }
+
+        try {
+          const response = await searchUsersFunction({ searchTerm: term });
+          resolve(response.data.results || []);
+        } catch (error) {
+          console.error('Search error:', error);
+          resolve([]);
+        }
+      }, 300);
+    });
+  };
+
+  // Handle search term changes
   useEffect(() => {
-    const performSearch = async () => {
+    const handleSearch = async () => {
       if (searchTerm.length < 2) {
-        setResults([]);
-        setError(null);
+        // Keep showing previous results briefly to prevent flickering
+        setTimeout(() => {
+          if (searchTerm.length < 2) {
+            setShowResults(false);
+            setResults([]);
+            setError(null);
+          }
+        }, 100);
         return;
       }
 
-      setIsLoading(true);
+      // Only show loading if we don't have previous results
+      if (prevResultsRef.current.length === 0) {
+        setIsLoading(true);
+      }
 
       try {
-        const response = await searchUsersFunction({ searchTerm });
-        const searchResults = response.data.results || [];
-        setResults(searchResults);
+        const searchResults = await debouncedSearch(searchTerm);
+
+        // Only update results if the search term hasn't changed
+        if (searchTerm.length >= 2) {
+          prevResultsRef.current = searchResults;
+          setResults(searchResults);
+          setShowResults(true);
+          setError(null);
+        }
       } catch (error) {
-        console.error('Search error details:', error);
         setError(`Search failed: ${error.message}`);
-        setResults([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Clear previous timeout to prevent race conditions
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      performSearch();
-    }, 300);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchTerm, searchUsersFunction]);
+    handleSearch();
+  }, [searchTerm]);
 
   const handleInputFocus = () => {
     if (searchTerm.length >= 2 && results.length > 0) {
-      setShowResults(true);
-    }
-  };
-
-  const handleSearchButtonClick = () => {
-    if (searchTerm.length >= 2) {
       setShowResults(true);
     }
   };
@@ -105,7 +112,7 @@ const SearchBar = () => {
           className='w-full p-2 pl-3 pr-10 border rounded bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500'
         />
         <button
-          onClick={handleSearchButtonClick}
+          onClick={() => setShowResults(searchTerm.length >= 2)}
           className='absolute right-2 top-1/2 transform -translate-y-1/2 text-green-600 hover:text-green-800'
           aria-label='Search'
         >
@@ -126,11 +133,14 @@ const SearchBar = () => {
         </button>
       </div>
 
-      {/* Always render the dropdown container but conditionally show content */}
+      {/* Keep the results container stable in the DOM */}
       <div
-        className={`absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto ${
-          showResults ? 'block' : 'hidden'
-        }`}
+        className='absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto transition-opacity duration-150'
+        style={{
+          opacity: showResults ? 1 : 0,
+          visibility: showResults ? 'visible' : 'hidden',
+          pointerEvents: showResults ? 'auto' : 'none',
+        }}
       >
         {isLoading ? (
           <div className='p-3 text-center text-gray-500'>Loading...</div>
