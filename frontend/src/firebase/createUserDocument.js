@@ -1,9 +1,9 @@
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from './firebase'; // Adjust the import if needed
+import { db } from './firebase';
 
 export const createUserDocument = async (user, additionalData = {}) => {
-  if (!user) {
-    console.error('No user provided to createUserDocument');
+  if (!user || !user.uid) {
+    console.error('Invalid user object provided to createUserDocument');
     return null;
   }
 

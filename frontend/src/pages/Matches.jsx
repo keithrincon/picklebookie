@@ -71,6 +71,15 @@ const Matches = () => {
         <p>
           <strong className='text-pickle-green'>Game Type:</strong> {match.type}
         </p>
+        <p>
+          <strong className='text-pickle-green'>Posted by:</strong>{' '}
+          <Link
+            to={`/profile/${match.userId}`}
+            className='text-green-600 hover:underline'
+          >
+            {match.userName || 'Unknown User'}
+          </Link>
+        </p>
       </div>
     </div>
   );

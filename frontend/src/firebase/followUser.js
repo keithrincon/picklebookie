@@ -1,5 +1,5 @@
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import { db } from './firebase'; // Adjust the import if needed
+import { db } from './firebase';
 
 /**
  * Follow a user by creating a document in the `followers` collection.

@@ -31,8 +31,7 @@ const functions = getFunctions(app);
 const googleProvider = new GoogleAuthProvider();
 
 // VAPID key for web push notifications
-const VAPID_KEY =
-  'BCJXJ7IPRvaGBzTGvaNn7ZLjLSel7Cd2PveNBh9u-9QvWs741_TSZzGfQefFxdXgZPjlv_Q7XsHYjM3e51jQ0xA';
+const VAPID_KEY = process.env.REACT_APP_FIREBASE_VAPID_KEY;
 
 // Function to request notification permission and save the token
 export const requestNotificationPermission = async () => {

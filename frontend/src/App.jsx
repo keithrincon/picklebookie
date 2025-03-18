@@ -12,6 +12,8 @@ import Footer from './components/shared/Footer';
 import Home from './pages/Home';
 import Matches from './pages/Matches';
 import Profile from './pages/Profile';
+import SignUp from './components/auth/SignUp';
+import LogIn from './components/auth/LogIn';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -45,6 +47,8 @@ function App() {
                 {/* Routes */}
                 <Routes>
                   <Route path='/' element={<Home />} />
+                  <Route path='/signup' element={<SignUp />} />
+                  <Route path='/login' element={<LogIn />} />
                   <Route path='/matches/:matchId' element={<Matches />} />
                   <Route path='/profile/:userId' element={<Profile />} />
                   <Route path='*' element={<NotFound />} />{' '}
