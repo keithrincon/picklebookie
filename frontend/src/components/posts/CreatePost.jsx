@@ -68,6 +68,9 @@ const CreatePost = () => {
     }
 
     const selectedDate = new Date(date);
+    // Reset time components to ensure fair comparison
+    selectedDate.setHours(0, 0, 0, 0);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
