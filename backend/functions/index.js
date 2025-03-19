@@ -10,10 +10,6 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 initializeApp();
 
 /**
- * HTTP-triggered function to search for users by name.
- * This function allows searching for users without requiring direct access to the users collection.
- */
-/**
  * HTTP-triggered function to search for users by username.
  * This function allows searching for users without requiring direct access to the users collection.
  */
@@ -112,6 +108,45 @@ exports.sendFollowNotification = onDocumentCreated(
     }
   }
 );
+
+/**
+ * HTTP-triggered function to follow a user.
+ */
+exports.followUser = onCall(async (request) => {
+  const { followerId, followingId } = request.data;
+
+  // Validate input
+  if (!followerId || !followingId) {
+    throw new Error('followerId and followingId are required');
+  }
+
+  const db = getFirestore();
+
+  try {
+    const followerRef = doc(db, 'followers', `${followerId}_${followingId}`);
+
+    // Get the follower's name
+    const userRef = doc(db, 'users', followerId);
+    const userSnap = await getDoc(userRef);
+    const followerName = userSnap.exists()
+      ? userSnap.data().name || 'A user'
+      : 'A user';
+
+    await setDoc(followerRef, {
+      followerId,
+      followingId,
+      followedUserId: followingId, // Add this field
+      followerName, // Add this field
+      createdAt: new Date(),
+    });
+
+    logger.info(`User ${followerId} is now following user ${followingId}`);
+    return { success: true };
+  } catch (error) {
+    logger.error('Error following user:', error);
+    throw new Error('Failed to follow user');
+  }
+});
 
 /**
  * Scheduled function to clean up expired posts daily at midnight

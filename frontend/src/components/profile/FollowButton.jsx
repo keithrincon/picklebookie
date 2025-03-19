@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
+import {
+  followUser,
+  unfollowUser,
+  isFollowing as checkIsFollowing,
+} from '../../firebase/followUser';
 
 const FollowButton = ({ userId }) => {
   const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Create a composite ID for the followers document
-  const followDocId = user ? `${user.uid}_${userId}` : null;
 
   // Check follow status on component mount or when user/userId changes
   useEffect(() => {
@@ -19,9 +19,8 @@ const FollowButton = ({ userId }) => {
 
       try {
         setLoading(true);
-        const followDocRef = doc(db, 'followers', followDocId);
-        const followDocSnap = await getDoc(followDocRef);
-        setIsFollowing(followDocSnap.exists());
+        const following = await checkIsFollowing(user.uid, userId);
+        setIsFollowing(following);
       } catch (error) {
         console.error('Error checking follow status:', error);
         toast.error('Failed to check follow status. Please try again.');
@@ -31,7 +30,7 @@ const FollowButton = ({ userId }) => {
     };
 
     checkFollowStatus();
-  }, [user, userId, followDocId]);
+  }, [user, userId]);
 
   // Handle follow action
   const handleFollow = async () => {
@@ -39,12 +38,7 @@ const FollowButton = ({ userId }) => {
 
     try {
       setLoading(true);
-      const followDocRef = doc(db, 'followers', followDocId);
-      await setDoc(followDocRef, {
-        followerId: user.uid,
-        followingId: userId,
-        createdAt: new Date(),
-      });
+      await followUser(user.uid, userId);
       setIsFollowing(true);
       toast.success('Followed successfully!');
     } catch (error) {
@@ -61,8 +55,7 @@ const FollowButton = ({ userId }) => {
 
     try {
       setLoading(true);
-      const followDocRef = doc(db, 'followers', followDocId);
-      await deleteDoc(followDocRef);
+      await unfollowUser(user.uid, userId);
       setIsFollowing(false);
       toast.success('Unfollowed successfully!');
     } catch (error) {
