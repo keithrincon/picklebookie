@@ -1,13 +1,20 @@
-const { onCall } = require('firebase-functions/v2/https');
+const { onCall, onRequest } = require('firebase-functions/v2/https'); // Added onRequest
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
+const {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+} = require('firebase-admin/firestore'); // Added doc, getDoc, setDoc
 const { getMessaging } = require('firebase-admin/messaging');
 const logger = require('firebase-functions/logger');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 
 // Initialize Firebase Admin SDK
 initializeApp();
+
+const db = getFirestore();
 
 /**
  * HTTP-triggered function to search for users by username.
@@ -22,8 +29,6 @@ exports.searchUsers = onCall(async (request) => {
       'Invalid search term. Must be a string with at least 2 characters.'
     );
   }
-
-  const db = getFirestore();
 
   try {
     logger.info(`Searching for users with username containing: ${searchTerm}`);
@@ -73,7 +78,7 @@ exports.sendFollowNotification = onDocumentCreated(
     }
 
     // Get the FCM token of the user being followed
-    const userDoc = await getFirestore()
+    const userDoc = await db
       .collection('users')
       .doc(followerData.followedUserId)
       .get();
@@ -120,8 +125,6 @@ exports.followUser = onCall(async (request) => {
     throw new Error('followerId and followingId are required');
   }
 
-  const db = getFirestore();
-
   try {
     const followerRef = doc(db, 'followers', `${followerId}_${followingId}`);
 
@@ -157,7 +160,6 @@ exports.cleanupExpiredPosts = onSchedule(
     timeZone: 'America/New_York', // Adjust to your timezone
   },
   async (event) => {
-    const db = getFirestore();
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       .toISOString()
@@ -199,3 +201,48 @@ exports.cleanupExpiredPosts = onSchedule(
     }
   }
 );
+
+/**
+ * HTTP-triggered function to initialize follow counts for all users.
+ * This function can be called manually or scheduled to update followerCount and followingCount fields.
+ */
+exports.initializeFollowCounts = onRequest(async (req, res) => {
+  try {
+    // Get all users
+    const usersSnapshot = await db.collection('users').get();
+
+    // For each user
+    for (const userDoc of usersSnapshot.docs) {
+      const userId = userDoc.id;
+
+      // Count followers
+      const followersSnapshot = await db
+        .collection('followers')
+        .where('followingId', '==', userId)
+        .get();
+      const followerCount = followersSnapshot.size;
+
+      // Count following
+      const followingSnapshot = await db
+        .collection('followers')
+        .where('followerId', '==', userId)
+        .get();
+      const followingCount = followingSnapshot.size;
+
+      // Update user document
+      await db.collection('users').doc(userId).update({
+        followerCount,
+        followingCount,
+      });
+
+      logger.info(
+        `Updated counts for user ${userId}: ${followerCount} followers, ${followingCount} following`
+      );
+    }
+
+    res.status(200).send('Counts initialized for all users');
+  } catch (error) {
+    logger.error('Error initializing follow counts:', error);
+    res.status(500).send('Error initializing follow counts: ' + error.message);
+  }
+});
