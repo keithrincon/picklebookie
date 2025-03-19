@@ -13,6 +13,10 @@ initializeApp();
  * HTTP-triggered function to search for users by name.
  * This function allows searching for users without requiring direct access to the users collection.
  */
+/**
+ * HTTP-triggered function to search for users by username.
+ * This function allows searching for users without requiring direct access to the users collection.
+ */
 exports.searchUsers = onCall(async (request) => {
   const { searchTerm } = request.data;
 
@@ -26,13 +30,13 @@ exports.searchUsers = onCall(async (request) => {
   const db = getFirestore();
 
   try {
-    logger.info(`Searching for users with name containing: ${searchTerm}`);
+    logger.info(`Searching for users with username containing: ${searchTerm}`);
 
-    // Query users where name starts with the search term (case-insensitive)
+    // Query users where username starts with the search term (case-insensitive)
     const usersQuery = db
       .collection('users')
-      .where('name', '>=', searchTerm.toLowerCase())
-      .where('name', '<=', searchTerm.toLowerCase() + '\uf8ff')
+      .where('username', '>=', searchTerm.toLowerCase())
+      .where('username', '<=', searchTerm.toLowerCase() + '\uf8ff')
       .limit(10); // Limit results to 10 for performance
 
     const querySnapshot = await usersQuery.get();
@@ -45,6 +49,7 @@ exports.searchUsers = onCall(async (request) => {
       return {
         id: doc.id,
         name: userData.name,
+        username: userData.username, // Include username in the results
         email: userData.email,
         photoURL: userData.photoURL,
       };
