@@ -11,7 +11,7 @@ export const createUserDocument = async (user, additionalData = {}) => {
   const userSnapshot = await getDoc(userRef);
 
   if (!userSnapshot.exists()) {
-    const { email, displayName } = user;
+    const { email, displayName, photoURL } = user; // Extract photoURL from the user object
     const createdAt = new Date();
 
     try {
@@ -19,6 +19,7 @@ export const createUserDocument = async (user, additionalData = {}) => {
         name: additionalData.name || displayName || email.split('@')[0],
         username: displayName || additionalData.username || email.split('@')[0],
         email,
+        photoURL: photoURL || additionalData.photoURL || null, // Use photoURL from user or additionalData
         createdAt,
         ...additionalData,
       });

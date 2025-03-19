@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
@@ -30,30 +30,33 @@ const SearchBar = () => {
     };
   }, []);
 
-  // Debounced search function
-  const debouncedSearch = (term) => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
+  // Debounced search function with useCallback
+  const debouncedSearch = useCallback(
+    (term) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
 
-    return new Promise((resolve) => {
-      debounceTimerRef.current = setTimeout(async () => {
-        if (term.length < 2) {
-          resolve([]);
-          return;
-        }
+      return new Promise((resolve) => {
+        debounceTimerRef.current = setTimeout(async () => {
+          if (term.length < 2) {
+            resolve([]);
+            return;
+          }
 
-        try {
-          const response = await searchUsersFunction({ searchTerm: term });
-          console.log('Raw API response:', response); // Debug the raw response
-          resolve(response.data || []); // Ensure response.data is an array
-        } catch (error) {
-          console.error('Search error:', error);
-          resolve([]);
-        }
-      }, 300);
-    });
-  };
+          try {
+            const response = await searchUsersFunction({ searchTerm: term });
+            console.log('Raw API response:', response); // Debug the raw response
+            resolve(response.data || []); // Ensure response.data is an array
+          } catch (error) {
+            console.error('Search error:', error);
+            resolve([]);
+          }
+        }, 300);
+      });
+    },
+    [searchUsersFunction]
+  ); // Add searchUsersFunction to the dependency array
 
   // Handle search term changes
   useEffect(() => {
@@ -94,33 +97,12 @@ const SearchBar = () => {
     };
 
     handleSearch();
-  }, [searchTerm]);
+  }, [searchTerm, debouncedSearch]); // Add debouncedSearch to the dependency array
 
   const handleInputFocus = () => {
-    if (searchTerm.length >= 2 && results.length > 0) {
+    if (searchTerm.length >= 2) {
       setShowResults(true);
     }
-  };
-
-  // Helper function to safely extract user properties
-  const getUserProperty = (user, property, fallback = '') => {
-    if (!user) return fallback;
-
-    // Try to access the property directly
-    if (user[property] !== undefined && user[property] !== null) {
-      return user[property];
-    }
-
-    // Try with data property (common in Firebase results)
-    if (
-      user.data &&
-      user.data[property] !== undefined &&
-      user.data[property] !== null
-    ) {
-      return user.data[property];
-    }
-
-    return fallback;
   };
 
   return (
@@ -157,44 +139,24 @@ const SearchBar = () => {
       </div>
 
       {/* Results container */}
-      <div
-        className='absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto transition-opacity duration-150'
-        style={{
-          opacity: showResults ? 1 : 0,
-          visibility: showResults ? 'visible' : 'hidden',
-          pointerEvents: showResults ? 'auto' : 'none',
-        }}
-      >
-        {isLoading ? (
-          <div className='p-3 text-center text-gray-500'>Loading...</div>
-        ) : error ? (
-          <div className='p-3 text-center text-red-500'>{error}</div>
-        ) : results && results.length > 0 ? (
-          results.map((user, index) => {
-            // Debug each user object
-            console.log(`User ${index}:`, user);
-
-            // Extract user properties safely
-            const userId = getUserProperty(user, 'id', `user-${index}`);
-            const displayName = getUserProperty(
-              user,
-              'name',
-              getUserProperty(user, 'username', 'Unknown User')
-            );
-            const username = getUserProperty(user, 'username', '');
-            const photoURL = getUserProperty(user, 'photoURL', '');
-
-            return (
+      {showResults && (
+        <div className='absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto'>
+          {isLoading ? (
+            <div className='p-3 text-center text-gray-500'>Loading...</div>
+          ) : error ? (
+            <div className='p-3 text-center text-red-500'>{error}</div>
+          ) : results.length > 0 ? (
+            results.map((user) => (
               <Link
-                key={userId}
-                to={`/profile/${userId}`}
+                key={user.id}
+                to={`/profile/${user.id}`}
                 className='flex items-center p-3 hover:bg-gray-100 border-b border-gray-100 last:border-none'
                 onClick={() => setShowResults(false)}
               >
-                {photoURL ? (
+                {user.photoURL ? (
                   <img
-                    src={photoURL}
-                    alt={displayName}
+                    src={user.photoURL}
+                    alt={user.name}
                     className='w-8 h-8 rounded-full mr-2'
                     onError={(e) => {
                       e.target.src = '/default-avatar.png';
@@ -203,23 +165,25 @@ const SearchBar = () => {
                 ) : (
                   <div className='w-8 h-8 rounded-full mr-2 bg-gray-200 flex items-center justify-center'>
                     <span className='text-sm font-medium text-gray-600'>
-                      {displayName.charAt(0) || '?'}
+                      {user.name?.charAt(0) || '?'}
                     </span>
                   </div>
                 )}
                 <div className='flex-1'>
-                  <div className='font-medium text-gray-800'>{displayName}</div>
-                  {username && (
-                    <div className='text-sm text-gray-500'>@{username}</div>
+                  <div className='font-medium text-gray-800'>{user.name}</div>
+                  {user.username && (
+                    <div className='text-sm text-gray-500'>
+                      @{user.username}
+                    </div>
                   )}
                 </div>
               </Link>
-            );
-          })
-        ) : searchTerm.length >= 2 ? (
-          <div className='p-3 text-center text-gray-500'>No users found</div>
-        ) : null}
-      </div>
+            ))
+          ) : (
+            <div className='p-3 text-center text-gray-500'>No users found</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
