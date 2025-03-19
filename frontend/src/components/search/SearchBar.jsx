@@ -46,7 +46,7 @@ const SearchBar = () => {
         try {
           const response = await searchUsersFunction({ searchTerm: term });
           console.log('Raw API response:', response); // Debug the raw response
-          resolve(response.data.results || []);
+          resolve(response.data || []); // Ensure response.data is an array
         } catch (error) {
           console.error('Search error:', error);
           resolve([]);
@@ -178,8 +178,8 @@ const SearchBar = () => {
             const userId = getUserProperty(user, 'id', `user-${index}`);
             const displayName = getUserProperty(
               user,
-              'displayName',
-              'Unknown User'
+              'name',
+              getUserProperty(user, 'username', 'Unknown User')
             );
             const username = getUserProperty(user, 'username', '');
             const photoURL = getUserProperty(user, 'photoURL', '');
