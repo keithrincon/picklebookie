@@ -9,18 +9,29 @@ import { db } from './firebase';
 export const followUser = async (followerId, followingId) => {
   if (!followerId || !followingId) {
     console.error('followerId and followingId are required');
-    return;
+    throw new Error('followerId and followingId are required');
   }
 
   const followerRef = doc(db, 'followers', `${followerId}_${followingId}`);
 
   try {
+    // Get the follower's name
+    const userRef = doc(db, 'users', followerId);
+    const userSnap = await getDoc(userRef);
+    const followerName = userSnap.exists()
+      ? userSnap.data().name || 'A user'
+      : 'A user';
+
     await setDoc(followerRef, {
       followerId,
       followingId,
+      followedUserId: followingId, // Add this field for the cloud function
+      followerName, // Add this field for notifications
       createdAt: new Date(),
     });
+
     console.log(`User ${followerId} is now following user ${followingId}`);
+    return true;
   } catch (error) {
     console.error('Error following user:', error);
     throw error;
@@ -35,7 +46,7 @@ export const followUser = async (followerId, followingId) => {
 export const unfollowUser = async (followerId, followingId) => {
   if (!followerId || !followingId) {
     console.error('followerId and followingId are required');
-    return;
+    throw new Error('followerId and followingId are required');
   }
 
   const followerRef = doc(db, 'followers', `${followerId}_${followingId}`);
@@ -43,6 +54,7 @@ export const unfollowUser = async (followerId, followingId) => {
   try {
     await deleteDoc(followerRef);
     console.log(`User ${followerId} has unfollowed user ${followingId}`);
+    return true;
   } catch (error) {
     console.error('Error unfollowing user:', error);
     throw error;

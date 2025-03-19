@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// eslint-disable-next-line no-unused-vars
-import { auth, db } from '../firebase/firebase';
+import { db } from '../firebase/firebase';
 import {
   collection,
   query,
@@ -24,59 +23,76 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const { user: currentUser } = useAuth();
 
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        // Fetch user data
-        const userRef = doc(db, 'users', userId);
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-          console.log('User data:', userSnap.data()); // Log the user data
-          setUser({ id: userSnap.id, ...userSnap.data() });
-        } else {
-          console.log('User not found in Firestore');
-        }
-
-        // Fetch user posts
-        const postsQuery = query(
-          collection(db, 'posts'),
-          where('userId', '==', userId),
-          orderBy('createdAt', 'desc')
-        );
-        const postsSnapshot = await getDocs(postsQuery);
-        setPosts(
-          postsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
-
-        // Fetch followers
-        const followersQuery = query(
-          collection(db, 'followers'),
-          where('followingId', '==', userId)
-        );
-        const followersSnapshot = await getDocs(followersQuery);
-        setFollowers(
-          followersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
-
-        // Fetch following
-        const followingQuery = query(
-          collection(db, 'followers'),
-          where('followerId', '==', userId)
-        );
-        const followingSnapshot = await getDocs(followingQuery);
-        setFollowing(
-          followingSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
-      } catch (error) {
-        console.error('Error fetching profile data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfileData();
+  // Function to fetch followers data
+  const fetchFollowers = useCallback(async () => {
+    try {
+      const followersQuery = query(
+        collection(db, 'followers'),
+        where('followingId', '==', userId)
+      );
+      const followersSnapshot = await getDocs(followersQuery);
+      setFollowers(
+        followersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
+    } catch (error) {
+      console.error('Error fetching followers:', error);
+    }
   }, [userId]);
+
+  // Fetch profile data
+  const fetchProfileData = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Fetch user data
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        console.log('User data:', userSnap.data());
+        setUser({ id: userSnap.id, ...userSnap.data() });
+      } else {
+        console.log('User not found in Firestore');
+      }
+
+      // Fetch user posts
+      const postsQuery = query(
+        collection(db, 'posts'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+      const postsSnapshot = await getDocs(postsQuery);
+      setPosts(
+        postsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
+
+      // Fetch followers
+      await fetchFollowers();
+
+      // Fetch following
+      const followingQuery = query(
+        collection(db, 'followers'),
+        where('followerId', '==', userId)
+      );
+      const followingSnapshot = await getDocs(followingQuery);
+      setFollowing(
+        followingSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, fetchFollowers]);
+
+  useEffect(() => {
+    fetchProfileData();
+  }, [fetchProfileData]);
+
+  // Handle follow status change
+  const handleFollowStatusChange = useCallback(async () => {
+    // Re-fetch followers when follow status changes
+    await fetchFollowers();
+  }, [fetchFollowers]);
 
   if (loading) {
     return (
@@ -112,7 +128,10 @@ const Profile = () => {
               ) : (
                 currentUser && (
                   <div className='w-full'>
-                    <FollowButton userId={userId} />
+                    <FollowButton
+                      userId={userId}
+                      onFollowStatusChange={handleFollowStatusChange}
+                    />
                   </div>
                 )
               )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import {
@@ -7,43 +7,51 @@ import {
   isFollowing as checkIsFollowing,
 } from '../../firebase/followUser';
 
-const FollowButton = ({ userId }) => {
+const FollowButton = ({ userId, onFollowStatusChange }) => {
   const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Check follow status on component mount or when user/userId changes
-  useEffect(() => {
-    const checkFollowStatus = async () => {
-      if (!user) return;
+  const checkFollowStatus = useCallback(async () => {
+    if (!user || !userId) return;
 
-      try {
-        setLoading(true);
-        const following = await checkIsFollowing(user.uid, userId);
-        setIsFollowing(following);
-      } catch (error) {
-        console.error('Error checking follow status:', error);
-        toast.error('Failed to check follow status. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkFollowStatus();
+    try {
+      setLoading(true);
+      const following = await checkIsFollowing(user.uid, userId);
+      setIsFollowing(following);
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      toast.error('Failed to check follow status');
+    } finally {
+      setLoading(false);
+    }
   }, [user, userId]);
+
+  useEffect(() => {
+    checkFollowStatus();
+  }, [checkFollowStatus]);
 
   // Handle follow action
   const handleFollow = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error('You must be logged in to follow users');
+      return;
+    }
 
     try {
       setLoading(true);
       await followUser(user.uid, userId);
       setIsFollowing(true);
       toast.success('Followed successfully!');
+
+      // Notify parent component about the follow status change
+      if (onFollowStatusChange) {
+        onFollowStatusChange(true);
+      }
     } catch (error) {
       console.error('Error following user:', error);
-      toast.error('Failed to follow user. Please try again.');
+      toast.error('Failed to follow user');
     } finally {
       setLoading(false);
     }
@@ -58,9 +66,14 @@ const FollowButton = ({ userId }) => {
       await unfollowUser(user.uid, userId);
       setIsFollowing(false);
       toast.success('Unfollowed successfully!');
+
+      // Notify parent component about the follow status change
+      if (onFollowStatusChange) {
+        onFollowStatusChange(false);
+      }
     } catch (error) {
       console.error('Error unfollowing user:', error);
-      toast.error('Failed to unfollow user. Please try again.');
+      toast.error('Failed to unfollow user');
     } finally {
       setLoading(false);
     }
@@ -70,10 +83,10 @@ const FollowButton = ({ userId }) => {
     <button
       onClick={isFollowing ? handleUnfollow : handleFollow}
       disabled={loading}
-      className={`px-4 py-2 rounded transition-colors ${
+      className={`w-full px-4 py-2 rounded transition-colors ${
         isFollowing
           ? 'bg-red-600 hover:bg-red-700 text-white'
-          : 'bg-blue-600 hover:bg-blue-700 text-white'
+          : 'bg-green-600 hover:bg-green-700 text-white'
       } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       {loading ? 'Loading...' : isFollowing ? 'Unfollow' : 'Follow'}
