@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { db } from '../../firebase/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
-import { usePosts } from '../../context/PostsContext'; // Import usePosts hook
+import { usePosts } from '../../context/PostsContext';
 
 const CreatePost = () => {
   // Form state
@@ -24,7 +24,7 @@ const CreatePost = () => {
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
-  const { refreshPosts } = usePosts(); // Use the refreshPosts function
+  const { refreshPosts } = usePosts();
 
   // Options for select fields
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -72,11 +72,6 @@ const CreatePost = () => {
     // Compare date strings directly instead of Date objects
     const todayStr = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
-    // For debugging
-    console.log('Selected date:', date);
-    console.log("Today's date:", todayStr);
-    console.log('Comparison result:', date < todayStr);
-
     if (date < todayStr) {
       setError('Please select today or a future date.');
       return false;
@@ -84,23 +79,31 @@ const CreatePost = () => {
 
     const maxDate = new Date();
     maxDate.setMonth(maxDate.getMonth() + 3);
+    const maxDateStr = maxDate.toISOString().split('T')[0];
 
-    if (date > maxDate) {
+    if (date > maxDateStr) {
       setError('You can only create posts up to 3 months in advance.');
       return false;
     }
 
-    const startTime = `${startHour}:${startMinute} ${startPeriod}`;
-    const endTime = `${endHour}:${endMinute} ${endPeriod}`;
-    const startDateTime = new Date(`${date} ${startTime}`);
-    const endDateTime = new Date(`${date} ${endTime}`);
+    // Create Date objects for time comparison
+    const startTime = convertTo24Hour(startHour, startMinute, startPeriod);
+    const endTime = convertTo24Hour(endHour, endMinute, endPeriod);
 
-    if (endDateTime <= startDateTime) {
+    if (endTime <= startTime) {
       setError('End time must be after start time.');
       return false;
     }
 
     return true;
+  };
+
+  // Helper function to convert time to 24-hour format for comparison
+  const convertTo24Hour = (hour, minute, period) => {
+    let h = parseInt(hour);
+    if (period === 'PM' && h < 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+    return h * 60 + parseInt(minute);
   };
 
   // Handle form submission
@@ -114,19 +117,23 @@ const CreatePost = () => {
     }
 
     try {
-      const formattedDate = formData.date;
-
-      await addDoc(collection(db, 'posts'), {
+      const newPost = {
         startTime: `${formData.startHour}:${formData.startMinute} ${formData.startPeriod}`,
         endTime: `${formData.endHour}:${formData.endMinute} ${formData.endPeriod}`,
-        date: formattedDate,
+        date: formData.date,
         location: formData.location,
         type: formData.type,
         description: formData.description || '',
         userId: user.uid,
         userName: user.displayName || user.email,
-        createdAt: new Date(),
-      });
+        createdAt: Timestamp.now(), // Use Firestore Timestamp
+      };
+
+      // Add the document to Firestore
+      await addDoc(collection(db, 'posts'), newPost);
+
+      // Trigger a refresh of the posts
+      refreshPosts();
 
       setFormData({
         startHour: '',
@@ -143,9 +150,6 @@ const CreatePost = () => {
 
       setError('');
       setSuccess('Your game post has been created!');
-
-      // Refresh posts to update the feed
-      refreshPosts();
 
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
