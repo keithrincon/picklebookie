@@ -67,14 +67,15 @@ const CreatePost = () => {
       return false;
     }
 
-    const selectedDate = new Date(date);
-    // Reset time components to ensure fair comparison
-    selectedDate.setHours(0, 0, 0, 0);
+    // Compare date strings directly instead of Date objects
+    const todayStr = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // For debugging
+    console.log('Selected date:', date);
+    console.log("Today's date:", todayStr);
+    console.log('Comparison result:', date < todayStr);
 
-    if (selectedDate < today) {
+    if (date < todayStr) {
       setError('Please select today or a future date.');
       return false;
     }
@@ -82,7 +83,7 @@ const CreatePost = () => {
     const maxDate = new Date();
     maxDate.setMonth(maxDate.getMonth() + 3);
 
-    if (selectedDate > maxDate) {
+    if (date > maxDate) {
       setError('You can only create posts up to 3 months in advance.');
       return false;
     }

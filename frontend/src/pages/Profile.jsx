@@ -18,8 +18,6 @@ const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
-  const [followers, setFollowers] = useState([]);
-  const [following, setFollowing] = useState([]);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -37,7 +35,6 @@ const Profile = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      setFollowers(followersData);
 
       // Get latest follower count from user document
       const userRef = doc(db, 'users', userId);
@@ -64,7 +61,6 @@ const Profile = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      setFollowing(followingData);
 
       // Get latest following count from user document
       const userRef = doc(db, 'users', userId);
