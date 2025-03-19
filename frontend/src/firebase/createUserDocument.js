@@ -14,10 +14,16 @@ export const createUserDocument = async (user, additionalData = {}) => {
     const { email, displayName } = user;
     const createdAt = new Date();
 
+    // Generate a username from additionalData, displayName, or email
+    const rawUsername =
+      additionalData.username || displayName || email.split('@')[0];
+    // Convert username to lowercase for consistent searching
+    const username = rawUsername.toLowerCase();
+
     try {
       await setDoc(userRef, {
         name: additionalData.name || displayName || email.split('@')[0],
-        username: additionalData.username || displayName || email.split('@')[0], // Add this line
+        username: username, // Store lowercase username
         email,
         photoURL: additionalData.photoURL || null,
         createdAt,
@@ -27,10 +33,10 @@ export const createUserDocument = async (user, additionalData = {}) => {
       return userRef;
     } catch (error) {
       console.error('Error creating user document:', error);
-      throw error; // Re-throw the error for handling in the calling function
+      throw error;
     }
   }
 
   console.log('User document already exists for:', user.email);
-  return userRef; // Return the reference even if the document already exists
+  return userRef;
 };

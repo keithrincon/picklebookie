@@ -44,10 +44,12 @@ const SearchBar = () => {
             return;
           }
 
+          // In the debouncedSearch function, update the resolve line:
           try {
             const response = await searchUsersFunction({ searchTerm: term });
-            console.log('Raw API response:', response); // Debug the raw response
-            resolve(response.data || []); // Ensure response.data is an array
+            console.log('Raw API response:', response);
+            // Change this line:
+            resolve(response.data.results || []); // Access the results array
           } catch (error) {
             console.error('Search error:', error);
             resolve([]);
