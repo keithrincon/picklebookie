@@ -11,15 +11,15 @@ export const createUserDocument = async (user, additionalData = {}) => {
   const userSnapshot = await getDoc(userRef);
 
   if (!userSnapshot.exists()) {
-    const { email, displayName, photoURL } = user; // Extract photoURL from the user object
+    const { email, displayName } = user;
     const createdAt = new Date();
 
     try {
       await setDoc(userRef, {
         name: additionalData.name || displayName || email.split('@')[0],
-        username: displayName || additionalData.username || email.split('@')[0],
+        username: additionalData.username || displayName || email.split('@')[0], // Add this line
         email,
-        photoURL: photoURL || additionalData.photoURL || null, // Use photoURL from user or additionalData
+        photoURL: additionalData.photoURL || null,
         createdAt,
         ...additionalData,
       });
