@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
 import { FirebaseProvider } from './context/FirebaseContext';
+import { PostsProvider } from './context/PostsContext'; // Import the PostsProvider
 import { BrowserRouter as Router } from 'react-router-dom';
 import App from './App.jsx';
 
@@ -22,9 +23,13 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <AuthProvider>
     <FirebaseProvider>
-      <Router>
-        <App />
-      </Router>
+      <PostsProvider>
+        {' '}
+        {/* Add PostsProvider */}
+        <Router>
+          <App />
+        </Router>
+      </PostsProvider>
     </FirebaseProvider>
   </AuthProvider>
 );

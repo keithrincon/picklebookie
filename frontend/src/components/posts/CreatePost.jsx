@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { db } from '../../firebase/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
+import { usePosts } from '../../context/PostsContext'; // Import usePosts hook
 
 const CreatePost = () => {
   // Form state
@@ -23,6 +24,7 @@ const CreatePost = () => {
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const { refreshPosts } = usePosts(); // Use the refreshPosts function
 
   // Options for select fields
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -141,6 +143,10 @@ const CreatePost = () => {
 
       setError('');
       setSuccess('Your game post has been created!');
+
+      // Refresh posts to update the feed
+      refreshPosts();
+
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error creating post:', error);
