@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const SearchBar = () => {
@@ -11,6 +11,7 @@ const SearchBar = () => {
   const searchRef = useRef(null);
   const debounceTimerRef = useRef(null);
   const prevResultsRef = useRef([]);
+  const location = useLocation(); // Track route changes
 
   // Initialize Firebase Functions
   const functions = getFunctions();
@@ -30,7 +31,13 @@ const SearchBar = () => {
     };
   }, []);
 
-  // Debounced search function with useCallback
+  // Clear search on route change
+  useEffect(() => {
+    setSearchTerm('');
+    setShowResults(false);
+  }, [location.pathname]); // Runs when the route changes
+
+  // Debounced search function
   const debouncedSearch = useCallback(
     (term) => {
       if (debounceTimerRef.current) {
@@ -44,12 +51,9 @@ const SearchBar = () => {
             return;
           }
 
-          // In the debouncedSearch function, update the resolve line:
           try {
             const response = await searchUsersFunction({ searchTerm: term });
-            console.log('Raw API response:', response);
-            // Change this line:
-            resolve(response.data.results || []); // Access the results array
+            resolve(response.data.results || []);
           } catch (error) {
             console.error('Search error:', error);
             resolve([]);
@@ -58,13 +62,12 @@ const SearchBar = () => {
       });
     },
     [searchUsersFunction]
-  ); // Add searchUsersFunction to the dependency array
+  );
 
   // Handle search term changes
   useEffect(() => {
     const handleSearch = async () => {
       if (searchTerm.length < 2) {
-        // Keep showing previous results briefly to prevent flickering
         setTimeout(() => {
           if (searchTerm.length < 2) {
             setShowResults(false);
@@ -75,16 +78,13 @@ const SearchBar = () => {
         return;
       }
 
-      // Only show loading if we don't have previous results
       if (prevResultsRef.current.length === 0) {
         setIsLoading(true);
       }
 
       try {
         const searchResults = await debouncedSearch(searchTerm);
-        console.log('Processed search results:', searchResults); // Debug processed results
 
-        // Only update results if the search term hasn't changed
         if (searchTerm.length >= 2) {
           prevResultsRef.current = searchResults;
           setResults(searchResults);
@@ -99,7 +99,7 @@ const SearchBar = () => {
     };
 
     handleSearch();
-  }, [searchTerm, debouncedSearch]); // Add debouncedSearch to the dependency array
+  }, [searchTerm, debouncedSearch]);
 
   const handleInputFocus = () => {
     if (searchTerm.length >= 2) {
@@ -153,7 +153,10 @@ const SearchBar = () => {
                 key={user.id}
                 to={`/profile/${user.id}`}
                 className='flex items-center p-3 hover:bg-gray-100 border-b border-gray-100 last:border-none'
-                onClick={() => setShowResults(false)}
+                onClick={() => {
+                  setShowResults(false);
+                  setSearchTerm('');
+                }}
               >
                 {user.photoURL ? (
                   <img
