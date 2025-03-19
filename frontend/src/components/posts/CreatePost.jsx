@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { db } from '../../firebase/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
-import { usePosts } from '../../context/PostsContext';
 
 const CreatePost = () => {
   // Form state
@@ -24,7 +23,6 @@ const CreatePost = () => {
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
-  const { refreshPosts } = usePosts();
 
   // Options for select fields
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -132,9 +130,7 @@ const CreatePost = () => {
       // Add the document to Firestore
       await addDoc(collection(db, 'posts'), newPost);
 
-      // Trigger a refresh of the posts
-      refreshPosts();
-
+      // Clear the form
       setFormData({
         startHour: '',
         startMinute: '00',
