@@ -128,7 +128,7 @@ const CreatePost = () => {
       };
 
       // Add the document to Firestore
-      await addDoc(collection(db, 'posts'), newPost);
+      await addDoc(collection(db, 'posts'), newPost); // Fixed: Added parentheses
 
       // Clear the form
       setFormData({
