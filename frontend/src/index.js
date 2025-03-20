@@ -24,8 +24,6 @@ root.render(
   <AuthProvider>
     <FirebaseProvider>
       <PostsProvider>
-        {' '}
-        {/* Add PostsProvider */}
         <Router>
           <App />
         </Router>

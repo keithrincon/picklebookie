@@ -1,4 +1,3 @@
-// 1. Create a new context file: src/context/PostsContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { db } from '../firebase/firebase';
 import {
@@ -9,20 +8,17 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 
+// Create a context for posts
 const PostsContext = createContext();
 
+// Custom hook to use the posts context
 export const usePosts = () => useContext(PostsContext);
 
+// Posts provider component
 export const PostsProvider = ({ children }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
-
-  // Function to force refresh posts
-  const refreshPosts = () => {
-    setLastRefresh(Date.now());
-  };
 
   useEffect(() => {
     setLoading(true);
@@ -36,6 +32,7 @@ export const PostsProvider = ({ children }) => {
       (querySnapshot) => {
         const postsList = querySnapshot.docs.map((doc) => {
           const data = doc.data();
+          console.log('Fetched post:', data); // Log each post
           return {
             id: doc.id,
             ...data,
@@ -46,16 +43,7 @@ export const PostsProvider = ({ children }) => {
           };
         });
 
-        // Sort posts client-side
-        postsList.sort((a, b) => {
-          // First by date (ascending)
-          const dateComparison = a.date.localeCompare(b.date);
-          if (dateComparison !== 0) return dateComparison;
-
-          // Then by createdAt (descending)
-          return b.createdAt - a.createdAt;
-        });
-
+        console.log('All posts:', postsList); // Log all posts
         setPosts(postsList);
         setLoading(false);
       },
@@ -68,13 +56,13 @@ export const PostsProvider = ({ children }) => {
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [lastRefresh]);
+  }, []);
 
+  // Value to provide to the context
   const value = {
     posts,
     loading,
     error,
-    refreshPosts,
   };
 
   return (
