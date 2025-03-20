@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePosts } from '../context/PostsContext';
+import { usePosts } from '../../context/PostsContext';
 
 const PostFeed = () => {
   const { posts, loading, error } = usePosts();
