@@ -38,6 +38,15 @@ const CreatePost = () => {
     'Oak Park Courts',
   ];
 
+  // Get today's date in YYYY-MM-DD format based on local timezone
+  const getTodayLocalDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Handle all form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -67,17 +76,21 @@ const CreatePost = () => {
       return false;
     }
 
-    // Compare date strings directly instead of Date objects
-    const todayStr = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    // Compare date with local today's date
+    const todayStr = getTodayLocalDate();
 
     if (date < todayStr) {
       setError('Please select today or a future date.');
       return false;
     }
 
+    // Calculate max date (3 months from now) using local date
     const maxDate = new Date();
     maxDate.setMonth(maxDate.getMonth() + 3);
-    const maxDateStr = maxDate.toISOString().split('T')[0];
+    const maxYear = maxDate.getFullYear();
+    const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
+    const maxDay = String(maxDate.getDate()).padStart(2, '0');
+    const maxDateStr = `${maxYear}-${maxMonth}-${maxDay}`;
 
     if (date > maxDateStr) {
       setError('You can only create posts up to 3 months in advance.');
@@ -189,7 +202,7 @@ const CreatePost = () => {
             name='date'
             value={formData.date}
             onChange={handleChange}
-            min={new Date().toISOString().split('T')[0]}
+            min={getTodayLocalDate()}
             className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             required
             aria-label='Select date'
