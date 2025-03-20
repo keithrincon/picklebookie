@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { db } from '../../firebase/firebase';
+import { db } from '../../../firebase/firebase'; // Adjust the path
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext'; // Adjust the path
+import { usePosts } from '../../../context/PostsContext'; // Adjust the path
 
 const CreatePost = () => {
   // Form state
