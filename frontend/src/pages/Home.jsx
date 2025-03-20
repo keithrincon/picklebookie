@@ -24,8 +24,8 @@ const Home = () => {
               a match!
             </p>
 
-            {/* CTA Button on large screens */}
-            <div className='hidden md:block'>
+            {/* CTA Button on large screens - ONLY show if one section is visible */}
+            <div className='hidden md:block lg:hidden'>
               <button
                 onClick={toggleCreateForm}
                 className='px-6 py-3 bg-white text-pickle-green font-semibold rounded-lg shadow hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-pickle-green'
@@ -85,6 +85,7 @@ const Home = () => {
             <PostFeed />
           </div>
         </div>
+
         {/* Game Stats Section */}
         <div className='mt-12 py-8 border-t border-gray-200'>
           <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>

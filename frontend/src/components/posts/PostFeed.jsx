@@ -24,57 +24,60 @@ const PostFeed = () => {
     <div className='space-y-4'>
       {posts.length > 0 ? (
         <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-          {posts.map((post) => (
-            <div
-              key={post.id}
-              className='bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow'
-            >
-              <div className='border-b pb-2 mb-3'>
-                <div className='flex items-center justify-between mb-2'>
-                  <p className='text-lg font-medium text-pickle-green'>
-                    {post.type}
+          {/* Add sorting logic here */}
+          {[...posts]
+            .sort((a, b) => b.createdAt - a.createdAt) // Sort posts by createdAt in descending order
+            .map((post) => (
+              <div
+                key={post.id}
+                className='bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow'
+              >
+                <div className='border-b pb-2 mb-3'>
+                  <div className='flex items-center justify-between mb-2'>
+                    <p className='text-lg font-medium text-pickle-green'>
+                      {post.type}
+                    </p>
+                    <span className='px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full'>
+                      {new Date(post.date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className='text-sm text-gray-500'>
+                    Posted by {post.userName || 'Unknown User'}
                   </p>
-                  <span className='px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full'>
-                    {new Date(post.date).toLocaleDateString()}
+                </div>
+
+                <div className='space-y-2'>
+                  <div className='flex justify-between'>
+                    <div>
+                      <p className='text-gray-600 text-sm'>Start</p>
+                      <p className='font-medium'>{post.startTime}</p>
+                    </div>
+                    <div>
+                      <p className='text-gray-600 text-sm'>End</p>
+                      <p className='font-medium'>{post.endTime}</p>
+                    </div>
+                  </div>
+
+                  <div className='mt-3'>
+                    <p className='text-gray-600 text-sm'>Location</p>
+                    <p className='font-medium'>{post.location}</p>
+                  </div>
+
+                  {post.description && (
+                    <div className='mt-3'>
+                      <p className='text-gray-600 text-sm'>Description</p>
+                      <p className='text-sm'>{post.description}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className='mt-4 pt-3 border-t flex justify-between items-center'>
+                  <span className='text-xs text-gray-500'>
+                    Created {post.createdAt.toLocaleString()}
                   </span>
                 </div>
-                <p className='text-sm text-gray-500'>
-                  Posted by {post.userName || 'Unknown User'}
-                </p>
               </div>
-
-              <div className='space-y-2'>
-                <div className='flex justify-between'>
-                  <div>
-                    <p className='text-gray-600 text-sm'>Start</p>
-                    <p className='font-medium'>{post.startTime}</p>
-                  </div>
-                  <div>
-                    <p className='text-gray-600 text-sm'>End</p>
-                    <p className='font-medium'>{post.endTime}</p>
-                  </div>
-                </div>
-
-                <div className='mt-3'>
-                  <p className='text-gray-600 text-sm'>Location</p>
-                  <p className='font-medium'>{post.location}</p>
-                </div>
-
-                {post.description && (
-                  <div className='mt-3'>
-                    <p className='text-gray-600 text-sm'>Description</p>
-                    <p className='text-sm'>{post.description}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className='mt-4 pt-3 border-t flex justify-between items-center'>
-                <span className='text-xs text-gray-500'>
-                  Created {post.createdAt.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       ) : (
         <div className='bg-white p-8 rounded-lg shadow-md text-center'>
