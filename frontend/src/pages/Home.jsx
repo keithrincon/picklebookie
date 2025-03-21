@@ -10,7 +10,7 @@ const Home = () => {
   };
 
   return (
-    <div className='flex flex-col min-h-screen bg-off-white'>
+    <div className='flex flex-col min-h-screen bg-off-white overflow-y-auto'>
       {/* Hero Section */}
       <div className='bg-gradient-to-r from-pickle-green to-court-blue text-white py-12 md:py-16 shadow-lg'>
         <div className='container mx-auto px-4 md:px-6 lg:px-8'>
@@ -33,8 +33,8 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className='container mx-auto px-4 md:px-6 lg:px-8 py-8 flex-1'>
+      {/* Main Content - Added overflow-y-auto to ensure content is scrollable */}
+      <div className='container mx-auto px-4 md:px-6 lg:px-8 py-8 flex-1 overflow-y-auto'>
         {/* Content Layout */}
         <div className='flex flex-col gap-8'>
           {/* Create Post Section */}
