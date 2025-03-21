@@ -79,97 +79,110 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className='hidden md:flex md:items-center md:justify-between md:flex-1 ml-10'>
-            {/* Desktop Search Bar */}
-            <div className='w-full max-w-md mx-4'>
-              <SearchBar />
-            </div>
-
-            {/* Desktop Menu Items */}
-            <div className='flex items-center space-x-4'>
-              {user ? (
-                <div className='relative' ref={dropdownRef}>
-                  <button
-                    onClick={toggleDropdown}
-                    className='flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-pickle-green-dark transition-colors'
-                    aria-expanded={isDropdownOpen}
-                    aria-haspopup='true'
-                    aria-label='User menu'
-                  >
-                    {user.photoURL ? (
-                      <img
-                        src={user.photoURL}
-                        alt='Profile'
-                        className='w-8 h-8 rounded-full'
-                        onError={(e) => {
-                          e.target.src = 'path/to/default/avatar.png';
-                        }}
-                      />
-                    ) : (
-                      <UserAvatar user={user} />
-                    )}
-                    <span className='hidden lg:inline'>
-                      {user.displayName || user.email?.split('@')[0]}
-                    </span>
-                    <svg
-                      className='w-4 h-4'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                      xmlns='http://www.w3.org/2000/svg'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M19 9l-7 7-7-7'
-                      />
-                    </svg>
-                  </button>
-
-                  {/* Desktop Dropdown Menu */}
-                  {isDropdownOpen && (
-                    <div className='absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50'>
-                      <Link
-                        to={`/profile/${user.uid}`}
-                        className='block px-4 py-2 text-gray-800 hover:bg-gray-100'
-                      >
-                        Profile
-                      </Link>
-                      <div className='border-t border-gray-200 my-1'></div>
-                      <button
-                        onClick={handleLogout}
-                        className='block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100'
-                      >
-                        Log Out
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className='flex items-center space-x-3'>
-                  <Link
-                    to='/login'
-                    className='bg-white text-pickle-green px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors font-medium'
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    to='/signup'
-                    className='border border-white px-4 py-2 rounded-lg hover:bg-pickle-green-dark transition-colors font-medium'
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
-            </div>
+          {/* Search Bar (centered for all screen sizes) */}
+          <div className='hidden sm:flex flex-1 justify-center max-w-md mx-auto px-2'>
+            <SearchBar />
           </div>
 
-          {/* Mobile menu button */}
-          <div className='md:hidden flex items-center'>
+          {/* Desktop Navigation */}
+          <div className='hidden md:flex items-center'>
+            {user ? (
+              <div className='relative' ref={dropdownRef}>
+                <button
+                  onClick={toggleDropdown}
+                  className='flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-pickle-green-dark transition-colors'
+                  aria-expanded={isDropdownOpen}
+                  aria-haspopup='true'
+                  aria-label='User menu'
+                >
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt='Profile'
+                      className='w-8 h-8 rounded-full'
+                      onError={(e) => {
+                        e.target.src = 'path/to/default/avatar.png';
+                      }}
+                    />
+                  ) : (
+                    <UserAvatar user={user} />
+                  )}
+                  <span className='hidden lg:inline'>
+                    {user.displayName || user.email?.split('@')[0]}
+                  </span>
+                  <svg
+                    className='w-4 h-4'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                    xmlns='http://www.w3.org/2000/svg'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M19 9l-7 7-7-7'
+                    />
+                  </svg>
+                </button>
+
+                {/* Desktop Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div className='absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50'>
+                    <Link
+                      to={`/profile/${user.uid}`}
+                      className='block px-4 py-2 text-gray-800 hover:bg-gray-100'
+                    >
+                      Profile
+                    </Link>
+                    <div className='border-t border-gray-200 my-1'></div>
+                    <button
+                      onClick={handleLogout}
+                      className='block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100'
+                    >
+                      Log Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className='flex items-center space-x-3'>
+                <Link
+                  to='/login'
+                  className='bg-white text-pickle-green px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors font-medium whitespace-nowrap'
+                >
+                  Log In
+                </Link>
+                <Link
+                  to='/signup'
+                  className='border border-white px-4 py-2 rounded-lg hover:bg-pickle-green-dark transition-colors font-medium whitespace-nowrap'
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Controls (Avatar, Hamburger) */}
+          <div className='flex md:hidden items-center space-x-2'>
+            {!user && (
+              <div className='sm:flex hidden items-center space-x-2'>
+                <Link
+                  to='/login'
+                  className='bg-white text-pickle-green px-3 py-1 rounded-lg text-sm hover:bg-gray-100 transition-colors font-medium whitespace-nowrap'
+                >
+                  Log In
+                </Link>
+                <Link
+                  to='/signup'
+                  className='border border-white px-3 py-1 rounded-lg text-sm hover:bg-pickle-green-dark transition-colors font-medium whitespace-nowrap'
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
             {user && (
-              <div className='mr-4'>
+              <div className='mr-2'>
                 <UserAvatar user={user} />
               </div>
             )}
@@ -223,9 +236,9 @@ const Navbar = () => {
           mobileMenuOpen ? 'block' : 'hidden'
         } md:hidden bg-pickle-green-dark`}
       >
-        <div className='px-2 pt-2 pb-3 space-y-1'>
+        <div className='px-2 pt-2 pb-3 space-y-3'>
           {/* Mobile Search */}
-          <div className='px-3 py-2'>
+          <div className='px-3 py-2 sm:hidden'>
             <SearchBar id='mobile-search' />
           </div>
 
@@ -245,7 +258,7 @@ const Navbar = () => {
               </button>
             </>
           ) : (
-            <div className='flex flex-col space-y-2 px-3 py-2'>
+            <div className='sm:hidden flex flex-col space-y-2 px-3 py-2'>
               <Link
                 to='/login'
                 className='bg-white text-pickle-green px-4 py-2 rounded-lg text-center font-medium'
