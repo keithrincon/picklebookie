@@ -8,10 +8,10 @@ const CreatePost = () => {
   const [formData, setFormData] = useState({
     startHour: '',
     startMinute: '00',
-    startPeriod: 'AM',
+    startPeriod: 'AM', // Default to AM
     endHour: '',
     endMinute: '00',
-    endPeriod: 'PM',
+    endPeriod: 'AM', // Default to AM
     date: '',
     location: '',
     type: 'Practice',
@@ -147,10 +147,10 @@ const CreatePost = () => {
       setFormData({
         startHour: '',
         startMinute: '00',
-        startPeriod: 'AM',
+        startPeriod: 'AM', // Reset to AM
         endHour: '',
         endMinute: '00',
-        endPeriod: 'PM',
+        endPeriod: 'AM', // Reset to AM
         date: '',
         location: '',
         type: 'Practice',
@@ -226,7 +226,7 @@ const CreatePost = () => {
                   name='startHour'
                   value={formData.startHour}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
                   required
                   aria-label='Select start hour'
                 >
@@ -247,7 +247,7 @@ const CreatePost = () => {
                   name='startMinute'
                   value={formData.startMinute}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
                   aria-label='Select start minute'
                 >
                   {minutes.map((m) => (
@@ -264,7 +264,7 @@ const CreatePost = () => {
                   name='startPeriod'
                   value={formData.startPeriod}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
                   aria-label='Select start period'
                 >
                   <option value='AM'>AM</option>
@@ -289,7 +289,7 @@ const CreatePost = () => {
                   name='endHour'
                   value={formData.endHour}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
                   required
                   aria-label='Select end hour'
                 >
@@ -310,7 +310,7 @@ const CreatePost = () => {
                   name='endMinute'
                   value={formData.endMinute}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
                   aria-label='Select end minute'
                 >
                   {minutes.map((m) => (
@@ -327,7 +327,7 @@ const CreatePost = () => {
                   name='endPeriod'
                   value={formData.endPeriod}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
                   aria-label='Select end period'
                 >
                   <option value='AM'>AM</option>
