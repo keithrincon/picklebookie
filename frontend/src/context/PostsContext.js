@@ -26,29 +26,52 @@ export const PostsProvider = ({ children }) => {
     // Create a query to get posts ordered by date
     const postsQuery = query(collection(db, 'posts'), orderBy('date', 'asc'));
 
+    console.log('Fetching posts from Firestore...'); // Debug log
+
     // Set up a real-time listener
     const unsubscribe = onSnapshot(
       postsQuery,
       (querySnapshot) => {
+        console.log('Firestore query snapshot:', querySnapshot); // Debug log
+
         const postsList = querySnapshot.docs.map((doc) => {
           const data = doc.data();
-          console.log('Fetched post:', data); // Log each post
+          console.log('Fetched post:', data); // Debug log
+
+          // Handle missing or invalid createdAt field
+          let createdAt;
+          if (data.createdAt instanceof Timestamp) {
+            createdAt = data.createdAt.toDate();
+          } else if (data.createdAt) {
+            createdAt = new Date(data.createdAt);
+          } else {
+            console.warn('Post is missing createdAt field:', doc.id); // Debug log
+            createdAt = new Date(); // Fallback to current date
+          }
+
+          // Handle missing or invalid date field
+          let date;
+          if (data.date) {
+            date = data.date; // Use the string value directly
+          } else {
+            console.warn('Post is missing date field:', doc.id); // Debug log
+            date = new Date().toISOString().split('T')[0]; // Fallback to current date
+          }
+
           return {
             id: doc.id,
             ...data,
-            createdAt:
-              data.createdAt instanceof Timestamp
-                ? data.createdAt.toDate()
-                : new Date(data.createdAt),
+            createdAt,
+            date,
           };
         });
 
-        console.log('All posts:', postsList); // Log all posts
+        console.log('All posts:', postsList); // Debug log
         setPosts(postsList);
         setLoading(false);
       },
       (err) => {
-        console.error('Error fetching posts:', err);
+        console.error('Error fetching posts:', err); // Debug log
         setError('Failed to load posts. Please try again later.');
         setLoading(false);
       }

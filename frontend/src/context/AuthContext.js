@@ -24,15 +24,15 @@ export const AuthProvider = ({ children }) => {
     // Reference to user document using auth UID as document ID
     const userRef = doc(db, 'users', user.uid);
 
-    // Check if the document already exists
-    const userSnapshot = await getDoc(userRef);
+    try {
+      // Check if the document already exists
+      const userSnapshot = await getDoc(userRef);
 
-    // If no document exists, create one
-    if (!userSnapshot.exists()) {
-      const { email, displayName, photoURL } = user;
-      const createdAt = new Date();
+      // If no document exists, create one
+      if (!userSnapshot.exists()) {
+        const { email, displayName, photoURL } = user;
+        const createdAt = new Date();
 
-      try {
         await setDoc(userRef, {
           name: displayName || additionalData.name || email.split('@')[0],
           displayName:
@@ -43,9 +43,9 @@ export const AuthProvider = ({ children }) => {
           ...additionalData,
         });
         console.log('User document created successfully');
-      } catch (error) {
-        console.error('Error creating user document', error);
       }
+    } catch (error) {
+      console.error('Error creating user document', error);
     }
 
     return userRef;
@@ -105,12 +105,17 @@ export const AuthProvider = ({ children }) => {
   // Effect to listen for changes in auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // For existing users, make sure they have a document
-        await createUserDocument(user);
+      try {
+        if (user) {
+          // For existing users, make sure they have a document
+          await createUserDocument(user);
+        }
+        setUser(user);
+      } catch (error) {
+        console.error('Error in auth state change:', error);
+      } finally {
+        setLoading(false);
       }
-      setUser(user);
-      setLoading(false);
     });
 
     return unsubscribe;
