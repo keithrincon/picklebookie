@@ -30,15 +30,15 @@ function App() {
           {/* Notification Component */}
           <NotificationComponent />
 
-          {/* Main Content */}
-          <main role='main' className='flex-1 p-4'>
+          {/* Main Content - Adjusted to have more appropriate spacing */}
+          <main role='main' className='flex-1 p-4 mt-4'>
             {/* Skip to Content Link */}
             <a href='#main-content' className='sr-only focus:not-sr-only'>
               Skip to content
             </a>
 
             {/* Main Content Area */}
-            <div id='main-content'>
+            <div id='main-content' className='pb-8'>
               <ErrorBoundary>
                 <Suspense
                   fallback={

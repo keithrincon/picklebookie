@@ -63,7 +63,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-100'>
+    <div className='py-16 flex items-center justify-center bg-gray-100'>
       <div className='bg-white p-8 rounded-lg shadow-md w-full max-w-md'>
         <h2 className='text-2xl font-bold mb-6 text-center text-green-600'>
           Sign Up for Picklebookie
