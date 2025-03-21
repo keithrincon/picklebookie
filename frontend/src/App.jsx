@@ -23,7 +23,7 @@ function App() {
   return (
     <AuthProvider>
       <FirebaseProvider>
-        <div className='min-h-screen bg-off-white flex flex-col'>
+        <div className='min-h-screen bg-off-white flex flex-col overflow-auto'>
           {/* Navbar */}
           <Navbar />
 
