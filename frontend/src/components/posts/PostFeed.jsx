@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePosts } from '../../context/PostsContext';
 
 const PostFeed = () => {
   const { posts, loading, error } = usePosts();
+  const [sortBy, setSortBy] = useState('newest');
 
   if (loading) {
     return (
@@ -20,17 +21,47 @@ const PostFeed = () => {
     );
   }
 
+  const sortPosts = (postsToSort) => {
+    if (sortBy === 'newest') {
+      return [...postsToSort].sort((a, b) => b.createdAt - a.createdAt);
+    } else if (sortBy === 'soonest') {
+      return [...postsToSort].sort(
+        (a, b) => new Date(a.date) - new Date(b.date)
+      );
+    } else if (sortBy === 'type') {
+      return [...postsToSort].sort((a, b) => a.type.localeCompare(b.type));
+    }
+    return postsToSort;
+  };
+
   return (
     <div className='space-y-4'>
       {posts.length > 0 ? (
-        <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-          {/* Add sorting logic here */}
-          {[...posts]
-            .sort((a, b) => b.createdAt - a.createdAt) // Sort posts by createdAt in descending order
-            .map((post) => (
+        <>
+          <div className='flex justify-between items-center mb-4'>
+            <div></div> {/* Empty div for flex spacing */}
+            <div className='flex items-center'>
+              <label htmlFor='sortBy' className='mr-2 text-sm text-gray-600'>
+                Sort by:
+              </label>
+              <select
+                id='sortBy'
+                className='text-sm border border-gray-300 rounded p-1 focus:outline-none focus:ring-1 focus:ring-pickle-green'
+                onChange={(e) => setSortBy(e.target.value)}
+                value={sortBy}
+              >
+                <option value='newest'>Newest</option>
+                <option value='soonest'>Soonest date</option>
+                <option value='type'>Game type</option>
+              </select>
+            </div>
+          </div>
+
+          <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'>
+            {sortPosts(posts).map((post) => (
               <div
                 key={post.id}
-                className='bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow'
+                className='bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:border-pickle-green-light border border-transparent transform hover:-translate-y-1'
               >
                 <div className='border-b pb-2 mb-3'>
                   <div className='flex items-center justify-between mb-2'>
@@ -78,7 +109,8 @@ const PostFeed = () => {
                 </div>
               </div>
             ))}
-        </div>
+          </div>
+        </>
       ) : (
         <div className='bg-white p-8 rounded-lg shadow-md text-center'>
           <p className='text-gray-500'>No games available.</p>
