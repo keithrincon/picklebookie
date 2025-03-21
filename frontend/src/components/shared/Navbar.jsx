@@ -79,9 +79,9 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Search Bar (centered for all screen sizes) */}
-          <div className='hidden sm:flex flex-1 justify-center max-w-md mx-auto px-2'>
-            <SearchBar />
+          {/* Search Bar (centered) */}
+          <div className='hidden sm:block flex-1 max-w-xs mx-auto px-4'>
+            <SearchBar id='desktop-search' />
           </div>
 
           {/* Desktop Navigation */}
@@ -163,7 +163,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Controls (Avatar, Hamburger) */}
+          {/* Mobile Controls */}
           <div className='flex md:hidden items-center space-x-2'>
             {!user && (
               <div className='sm:flex hidden items-center space-x-2'>

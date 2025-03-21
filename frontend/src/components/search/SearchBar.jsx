@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-const SearchBar = () => {
+const SearchBar = ({ id }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -108,15 +108,17 @@ const SearchBar = () => {
   };
 
   return (
-    <div className='relative' ref={searchRef}>
+    <div className='relative w-full' ref={searchRef}>
       <div className='relative'>
         <input
+          id={id}
           type='text'
-          placeholder='Search users by username...'
+          placeholder='Search users...'
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={handleInputFocus}
-          className='w-full p-2 pl-3 pr-10 border rounded bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500'
+          className='w-full p-2 pl-3 pr-10 border rounded bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm'
+          aria-label='Search users'
         />
         <button
           onClick={() => setShowResults(searchTerm.length >= 2)}
