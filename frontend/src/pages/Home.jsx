@@ -38,38 +38,34 @@ const Home = () => {
         {/* Content Layout */}
         <div className='flex flex-col lg:flex-row gap-8'>
           {/* Create Post Section */}
-          <div
-            className={`lg:w-2/5 ${
-              showCreateForm ? 'block' : 'hidden'
-            } lg:block`}
-          >
-            <div className='sticky top-24'>
-              <CreatePost />
+          {showCreateForm && (
+            <div className='lg:w-2/5 lg:block'>
+              <div className='sticky top-24'>
+                <CreatePost />
 
-              {/* Quick tips box */}
-              <div className='mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6 hidden lg:block'>
-                <h3 className='font-medium text-blue-800 mb-4'>Quick Tips</h3>
-                <ul className='text-blue-700 text-sm space-y-2'>
-                  <li>• Schedule games up to 3 months in advance</li>
-                  <li>• Include your skill level in the description</li>
-                  <li>• Check the feed regularly for new games</li>
-                  <li>• Be clear about the location details</li>
-                </ul>
+                {/* Quick Tips Box */}
+                <div className='mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6'>
+                  <h3 className='font-medium text-blue-800 mb-4'>Quick Tips</h3>
+                  <ul className='text-blue-700 text-sm space-y-2'>
+                    <li>• Schedule games up to 3 months in advance</li>
+                    <li>• Include your skill level in the description</li>
+                    <li>• Check the feed regularly for new games</li>
+                    <li>• Be clear about the location details</li>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Post Feed Section */}
-          <div
-            className={`lg:w-3/5 ${
-              showCreateForm ? 'hidden' : 'block'
-            } lg:block`}
-          >
-            <h2 className='text-2xl font-semibold text-pickle-green mb-6 font-poppins'>
-              Available Games
-            </h2>
-            <PostFeed />
-          </div>
+          {!showCreateForm && (
+            <div className='lg:w-3/5 lg:block'>
+              <h2 className='text-2xl font-semibold text-pickle-green mb-6 font-poppins'>
+                Available Games
+              </h2>
+              <PostFeed />
+            </div>
+          )}
         </div>
 
         {/* Game Stats Section */}
