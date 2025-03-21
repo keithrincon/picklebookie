@@ -7,6 +7,7 @@ import {
   onSnapshot,
   Timestamp,
 } from 'firebase/firestore';
+import { useAuth } from './AuthContext'; // Import useAuth to get the current user
 
 // Create a context for posts
 const PostsContext = createContext();
@@ -19,20 +20,35 @@ export const PostsProvider = ({ children }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuth(); // Get the current user
 
   useEffect(() => {
+    if (!user) {
+      console.log('User is not authenticated. Skipping posts fetch.'); // Debug log
+      setLoading(false);
+      return; // Don't fetch posts if the user isn't authenticated
+    }
+
     setLoading(true);
 
     // Create a query to get posts ordered by date
     const postsQuery = query(collection(db, 'posts'), orderBy('date', 'asc'));
 
     console.log('Fetching posts from Firestore...'); // Debug log
+    console.log('Authenticated user UID:', user.uid); // Debug log
 
     // Set up a real-time listener
     const unsubscribe = onSnapshot(
       postsQuery,
       (querySnapshot) => {
         console.log('Firestore query snapshot:', querySnapshot); // Debug log
+
+        if (querySnapshot.empty) {
+          console.warn('No posts found in the query snapshot.'); // Debug log
+          setPosts([]); // Set posts to an empty array if no posts are found
+          setLoading(false);
+          return;
+        }
 
         const postsList = querySnapshot.docs.map((doc) => {
           const data = doc.data();
@@ -79,7 +95,7 @@ export const PostsProvider = ({ children }) => {
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, []);
+  }, [user]); // Re-run the effect when the user changes
 
   // Value to provide to the context
   const value = {
