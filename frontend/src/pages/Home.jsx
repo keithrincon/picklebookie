@@ -36,11 +36,11 @@ const Home = () => {
       {/* Main Content */}
       <div className='container mx-auto px-4 md:px-6 lg:px-8 py-8 flex-1'>
         {/* Content Layout */}
-        <div className='flex flex-col lg:flex-row gap-8'>
+        <div className='flex flex-col gap-8'>
           {/* Create Post Section */}
           {showCreateForm && (
-            <div className='lg:w-2/5 lg:block'>
-              <div className='sticky top-24'>
+            <div className={showCreateForm ? 'block' : 'hidden'}>
+              <div className='max-w-2xl mx-auto'>
                 <CreatePost />
 
                 {/* Quick Tips Box */}
@@ -58,14 +58,14 @@ const Home = () => {
           )}
 
           {/* Post Feed Section */}
-          {!showCreateForm && (
-            <div className='lg:w-3/5 lg:block'>
+          <div className={showCreateForm ? 'hidden' : 'block'}>
+            <div className='max-w-6xl mx-auto'>
               <h2 className='text-2xl font-semibold text-pickle-green mb-6 font-poppins'>
                 Available Games
               </h2>
               <PostFeed />
             </div>
-          )}
+          </div>
         </div>
 
         {/* Game Stats Section */}
