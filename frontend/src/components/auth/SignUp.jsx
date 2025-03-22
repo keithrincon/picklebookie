@@ -9,15 +9,18 @@ const SignUp = () => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { signUp, logInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setIsLoading(true);
 
     if (!email || !password || !username) {
       setError('Please enter email, password, and username.');
+      setIsLoading(false);
       return;
     }
 
@@ -40,10 +43,13 @@ const SignUp = () => {
       }
     } catch (error) {
       setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
+    setIsLoading(true);
     try {
       await logInWithGoogle();
       navigate('/'); // Redirect to the home page after successful Google sign-up
@@ -59,6 +65,8 @@ const SignUp = () => {
       }
     } catch (error) {
       setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -145,18 +153,20 @@ const SignUp = () => {
           </div>
           <button
             type='submit'
+            disabled={isLoading}
             className='w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
           >
-            Sign Up
+            {isLoading ? 'Signing Up...' : 'Sign Up'}
           </button>
         </form>
 
         {/* Google Sign-In Button */}
         <button
           onClick={handleGoogleSignUp}
+          disabled={isLoading}
           className='w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mt-4'
         >
-          Sign Up with Google
+          {isLoading ? 'Signing Up...' : 'Sign Up with Google'}
         </button>
 
         <p className='mt-6 text-center text-sm text-gray-600'>

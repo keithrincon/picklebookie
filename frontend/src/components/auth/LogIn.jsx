@@ -7,15 +7,18 @@ const LogIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const { logIn } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { logIn, logInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null); // Reset error on new attempt
+    setError(null);
+    setIsLoading(true);
 
     if (!email || !password) {
       setError('Please enter both email and password.');
+      setIsLoading(false);
       return;
     }
 
@@ -37,6 +40,30 @@ const LogIn = () => {
     } catch (error) {
       setError('Failed to log in. Check your credentials and try again.');
       console.error(error); // Log the actual error for debugging
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      await logInWithGoogle();
+      navigate('/'); // Redirect to the home page after successful Google login
+
+      // Request notification permission and save the FCM token
+      const token = await requestNotificationPermission();
+      if (token) {
+        console.log('FCM token saved:', token);
+      } else {
+        console.log(
+          'Notification permission not granted or token not available.'
+        );
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -88,11 +115,22 @@ const LogIn = () => {
           </div>
           <button
             type='submit'
+            disabled={isLoading}
             className='w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
           >
-            Log In
+            {isLoading ? 'Logging In...' : 'Log In'}
           </button>
         </form>
+
+        {/* Google Sign-In Button */}
+        <button
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className='w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mt-4'
+        >
+          {isLoading ? 'Logging In...' : 'Log In with Google'}
+        </button>
+
         <p className='mt-6 text-center text-sm text-gray-600'>
           Don't have an account?{' '}
           <Link to='/signup' className='text-green-600 hover:underline'>
