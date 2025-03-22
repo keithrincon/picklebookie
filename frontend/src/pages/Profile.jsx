@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Add useNavigate
+import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase/firebase';
 import {
   collection,
@@ -15,7 +15,7 @@ import FollowButton from '../components/profile/FollowButton';
 
 const Profile = () => {
   const { userId } = useParams();
-  const navigate = useNavigate(); // Add this line
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [followerCount, setFollowerCount] = useState(0);
