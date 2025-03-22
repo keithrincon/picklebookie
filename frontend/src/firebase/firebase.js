@@ -11,13 +11,8 @@ import {
   connectFirestoreEmulator,
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getAnalytics } from 'firebase/analytics';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import {
-  getFunctions,
-  httpsCallable,
-  connectFunctionsEmulator,
-} from 'firebase/functions';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -35,7 +30,6 @@ const app = initializeApp(firebaseConfig);
 
 // Get instances for services
 const auth = getAuth(app);
-const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
 const functions = getFunctions(app);

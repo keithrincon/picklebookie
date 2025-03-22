@@ -7,8 +7,20 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  deleteUser,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  updateDoc, // Add this import
+} from 'firebase/firestore';
+import { toast } from 'react-toastify';
 import { requestNotificationPermission } from '../firebase/firebase';
 
 // Create a context for Auth
@@ -119,6 +131,61 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
+  // Delete account function
+  const deleteAccount = async () => {
+    if (!user) {
+      toast.error('You must be logged in to delete your account');
+      return;
+    }
+
+    try {
+      // Delete user posts
+      const postsQuery = query(
+        collection(db, 'posts'),
+        where('userId', '==', user.uid)
+      );
+      const postsSnapshot = await getDocs(postsQuery);
+      postsSnapshot.forEach(async (doc) => {
+        await deleteDoc(doc.ref);
+      });
+
+      // Delete user followers
+      const followersQuery = query(
+        collection(db, 'followers'),
+        where('followerId', '==', user.uid)
+      );
+      const followersSnapshot = await getDocs(followersQuery);
+      followersSnapshot.forEach(async (doc) => {
+        await deleteDoc(doc.ref);
+      });
+
+      // Delete user following
+      const followingQuery = query(
+        collection(db, 'followers'),
+        where('followingId', '==', user.uid)
+      );
+      const followingSnapshot = await getDocs(followingQuery);
+      followingSnapshot.forEach(async (doc) => {
+        await deleteDoc(doc.ref);
+      });
+
+      // Delete the user document
+      const userRef = doc(db, 'users', user.uid);
+      await deleteDoc(userRef);
+
+      // Delete the user from Firebase Authentication
+      await deleteUser(user);
+
+      // Log the user out
+      await logOut();
+
+      toast.success('Account deleted successfully');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast.error('Failed to delete account');
+    }
+  };
+
   // Effect to listen for changes in auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -145,6 +212,7 @@ export const AuthProvider = ({ children }) => {
         logIn,
         logInWithGoogle,
         logOut,
+        deleteAccount,
         loading,
       }}
     >

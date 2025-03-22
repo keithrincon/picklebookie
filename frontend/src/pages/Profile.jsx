@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom'; // Remove unused `useNavigate`
 import { db } from '../firebase/firebase';
 import {
   collection,
@@ -15,13 +15,12 @@ import FollowButton from '../components/profile/FollowButton';
 
 const Profile = () => {
   const { userId } = useParams();
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, deleteAccount } = useAuth();
 
   // Fetch profile data
   const fetchProfileData = useCallback(async () => {
@@ -82,6 +81,17 @@ const Profile = () => {
     [fetchProfileData]
   );
 
+  // Confirm delete account
+  const confirmDelete = () => {
+    if (
+      window.confirm(
+        'Are you sure you want to delete your account? This action cannot be undone.'
+      )
+    ) {
+      deleteAccount();
+    }
+  };
+
   if (loading) {
     return (
       <div className='flex justify-center items-center h-screen'>
@@ -108,7 +118,7 @@ const Profile = () => {
             <div className='flex gap-3 w-full md:w-auto'>
               {currentUser && currentUser.uid === userId ? (
                 <button
-                  onClick={() => navigate('/settings')}
+                  onClick={confirmDelete}
                   className='w-full bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded transition'
                 >
                   Delete Account
