@@ -3,11 +3,22 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import SearchBar from '../search/SearchBar';
 
-const UserAvatar = ({ user }) => (
-  <div className='w-8 h-8 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold'>
-    {(user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
-  </div>
-);
+const UserAvatar = ({ user }) => {
+  return user.photoURL ? (
+    <img
+      src={user.photoURL}
+      alt='Profile'
+      className='w-8 h-8 rounded-full border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'
+      onError={(e) => {
+        e.target.src = 'path/to/default/avatar.png';
+      }}
+    />
+  ) : (
+    <div className='w-8 h-8 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'>
+      {(user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+    </div>
+  );
+};
 
 const Navbar = () => {
   const { user, logOut } = useAuth();
@@ -70,14 +81,27 @@ const Navbar = () => {
     <nav className='bg-pickle-green text-white shadow-md sticky top-0 z-50'>
       <div className='container mx-auto px-4'>
         <div className='flex justify-between items-center h-16'>
-          {/* Logo */}
-          <div className='flex items-center'>
-            <Link to='/' className='flex items-center'>
-              <div className='font-poppins font-bold text-2xl text-white'>
-                PICKLEBOOKIE
-              </div>
-            </Link>
-          </div>
+          {/* Enhanced Logo with Icon */}
+          <Link
+            to='/'
+            className='flex items-center space-x-2 hover:opacity-90 transition-opacity'
+          >
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              className='h-8 w-8'
+              viewBox='0 0 20 20'
+              fill='currentColor'
+            >
+              <path
+                fillRule='evenodd'
+                d='M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z'
+                clipRule='evenodd'
+              />
+            </svg>
+            <div className='font-poppins font-bold text-2xl text-white'>
+              PICKLEBOOKIE
+            </div>
+          </Link>
 
           {/* Search Bar (centered) */}
           <div className='hidden sm:block flex-1 max-w-xs mx-auto px-4'>
@@ -95,18 +119,7 @@ const Navbar = () => {
                   aria-haspopup='true'
                   aria-label='User menu'
                 >
-                  {user.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt='Profile'
-                      className='w-8 h-8 rounded-full'
-                      onError={(e) => {
-                        e.target.src = 'path/to/default/avatar.png';
-                      }}
-                    />
-                  ) : (
-                    <UserAvatar user={user} />
-                  )}
+                  <UserAvatar user={user} />
                   <span className='hidden lg:inline'>
                     {user.displayName || user.email?.split('@')[0]}
                   </span>
@@ -230,11 +243,13 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile Menu with Animation */}
       <div
-        className={`${
-          mobileMenuOpen ? 'block' : 'hidden'
-        } md:hidden bg-pickle-green-dark`}
+        className={`md:hidden bg-pickle-green-dark absolute w-full left-0 shadow-lg transform transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen
+            ? 'translate-y-0 opacity-100'
+            : '-translate-y-full opacity-0'
+        }`}
       >
         <div className='px-2 pt-2 pb-3 space-y-3'>
           {/* Mobile Search */}
