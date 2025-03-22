@@ -23,56 +23,58 @@ const Home = () => {
               Post your game details, connect with other players, and never miss
               a match!
             </p>
-            {/* Enhanced CTA Button with icon */}
-            <button
-              onClick={toggleCreateForm}
-              className='px-8 py-3 bg-white text-pickle-green font-semibold rounded-lg shadow-lg 
-              hover:bg-gray-100 hover:scale-105 transition-all duration-300 
-              focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 
-              focus:ring-offset-pickle-green flex items-center justify-center gap-2'
-            >
-              {showCreateForm ? (
-                <>
-                  <span>View All Games</span>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    className='h-5 w-5'
-                    viewBox='0 0 20 20'
-                    fill='currentColor'
-                  >
-                    <path d='M10 12a2 2 0 100-4 2 2 0 000 4z' />
-                    <path
-                      fillRule='evenodd'
-                      d='M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z'
-                      clipRule='evenodd'
-                    />
-                  </svg>
-                </>
-              ) : (
-                <>
-                  <span>Schedule a Game</span>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    className='h-5 w-5'
-                    viewBox='0 0 20 20'
-                    fill='currentColor'
-                  >
-                    <path
-                      fillRule='evenodd'
-                      d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
-                      clipRule='evenodd'
-                    />
-                  </svg>
-                </>
-              )}
-            </button>
+
+            {/* Centered CTA Button with proper container alignment */}
+            <div className='flex justify-center'>
+              <button
+                onClick={toggleCreateForm}
+                className='px-8 py-3 bg-white text-pickle-green font-semibold rounded-lg shadow-lg 
+                hover:bg-gray-100 hover:scale-105 transition-all duration-300 
+                focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 
+                focus:ring-offset-pickle-green flex items-center justify-center gap-2 mx-auto'
+              >
+                {showCreateForm ? (
+                  <>
+                    <span>View All Games</span>
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      className='h-5 w-5'
+                      viewBox='0 0 20 20'
+                      fill='currentColor'
+                    >
+                      <path d='M10 12a2 2 0 100-4 2 2 0 000 4z' />
+                      <path
+                        fillRule='evenodd'
+                        d='M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z'
+                        clipRule='evenodd'
+                      />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    <span>Schedule a Game</span>
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      className='h-5 w-5'
+                      viewBox='0 0 20 20'
+                      fill='currentColor'
+                    >
+                      <path
+                        fillRule='evenodd'
+                        d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
+                        clipRule='evenodd'
+                      />
+                    </svg>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Added overflow-y-auto to ensure content is scrollable */}
+      {/* Main Content */}
       <div className='container mx-auto px-4 md:px-6 lg:px-8 py-8 flex-1 overflow-y-auto'>
-        {/* Content Layout */}
         <div className='flex flex-col gap-8'>
           {/* Create Post Section */}
           {showCreateForm && (
