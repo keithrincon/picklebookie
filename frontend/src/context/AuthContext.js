@@ -8,6 +8,8 @@ import {
   onAuthStateChanged,
   updateProfile,
   deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from 'firebase/auth';
 import {
   doc,
@@ -18,7 +20,7 @@ import {
   query,
   where,
   getDocs,
-  updateDoc, // Add this import
+  updateDoc,
 } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { requestNotificationPermission } from '../firebase/firebase';
@@ -131,6 +133,13 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
+  // Re-authenticate the user
+  const promptForCredentials = () => {
+    const email = prompt('Enter your email:');
+    const password = prompt('Enter your password:');
+    return EmailAuthProvider.credential(email, password);
+  };
+
   // Delete account function
   const deleteAccount = async () => {
     if (!user) {
@@ -139,6 +148,10 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
+      // Re-authenticate the user
+      const credential = promptForCredentials();
+      await reauthenticateWithCredential(user, credential);
+
       // Delete user posts
       const postsQuery = query(
         collection(db, 'posts'),
@@ -162,7 +175,7 @@ export const AuthProvider = ({ children }) => {
       // Delete user following
       const followingQuery = query(
         collection(db, 'followers'),
-        where('followingId', '==', user.uid)
+        where('followedUserId', '==', user.uid)
       );
       const followingSnapshot = await getDocs(followingQuery);
       followingSnapshot.forEach(async (doc) => {
@@ -182,7 +195,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Account deleted successfully');
     } catch (error) {
       console.error('Error deleting account:', error);
-      toast.error('Failed to delete account');
+      toast.error('Failed to delete account. Please try again.');
     }
   };
 
