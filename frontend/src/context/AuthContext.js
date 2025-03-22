@@ -8,7 +8,8 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { requestNotificationPermission } from '../firebase/firebase';
 
 // Create a context for Auth
 const AuthContext = createContext();
@@ -21,14 +22,11 @@ export const AuthProvider = ({ children }) => {
   const createUserDocument = async (user, additionalData = {}) => {
     if (!user) return;
 
-    // Reference to user document using auth UID as document ID
     const userRef = doc(db, 'users', user.uid);
 
     try {
-      // Check if the document already exists
       const userSnapshot = await getDoc(userRef);
 
-      // If no document exists, create one
       if (!userSnapshot.exists()) {
         const { email, displayName, photoURL } = user;
         const createdAt = new Date();
@@ -36,13 +34,18 @@ export const AuthProvider = ({ children }) => {
         await setDoc(userRef, {
           name: displayName || additionalData.name || email.split('@')[0],
           displayName:
-            displayName || additionalData.name || email.split('@')[0], // Ensure displayName is saved
+            displayName || additionalData.name || email.split('@')[0],
           email,
-          photoURL: photoURL || additionalData.photoURL || null, // Save photoURL if available
+          photoURL: photoURL || additionalData.photoURL || null,
           createdAt,
+          fcmToken: additionalData.fcmToken || null,
           ...additionalData,
         });
         console.log('User document created successfully');
+      } else if (additionalData.fcmToken) {
+        await updateDoc(userRef, {
+          fcmToken: additionalData.fcmToken,
+        });
       }
     } catch (error) {
       console.error('Error creating user document', error);
@@ -51,7 +54,7 @@ export const AuthProvider = ({ children }) => {
     return userRef;
   };
 
-  // Updated Sign-up function
+  // Sign-up function
   const signUp = async (email, password, username) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(
@@ -61,11 +64,14 @@ export const AuthProvider = ({ children }) => {
       );
       const user = userCredential.user;
 
-      // Set the username in Firebase Authentication profile
       await updateProfile(user, { displayName: username });
-
-      // Store user details in Firestore
       await createUserDocument(user, { name: username, displayName: username });
+
+      // Request notification permission
+      const fcmToken = await requestNotificationPermission();
+      if (fcmToken) {
+        await updateDoc(doc(db, 'users', user.uid), { fcmToken });
+      }
 
       return user;
     } catch (error) {
@@ -74,15 +80,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Log-in function - checks for user document too
+  // Log-in function
   const logIn = async (email, password) => {
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email,
       password
     );
-    // Check for user document after login
     await createUserDocument(userCredential.user);
+
+    // Request notification permission
+    const fcmToken = await requestNotificationPermission();
+    if (fcmToken) {
+      await updateDoc(doc(db, 'users', userCredential.user.uid), { fcmToken });
+    }
+
     return userCredential.user;
   };
 
@@ -91,8 +103,13 @@ export const AuthProvider = ({ children }) => {
     const userCredential = await signInWithPopup(auth, googleProvider);
     const { displayName, photoURL } = userCredential.user;
 
-    // Create user document after successful Google Sign-In
     await createUserDocument(userCredential.user, { displayName, photoURL });
+
+    // Request notification permission
+    const fcmToken = await requestNotificationPermission();
+    if (fcmToken) {
+      await updateDoc(doc(db, 'users', userCredential.user.uid), { fcmToken });
+    }
 
     return userCredential.user;
   };
@@ -107,7 +124,6 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
         if (user) {
-          // For existing users, make sure they have a document
           await createUserDocument(user);
         }
         setUser(user);

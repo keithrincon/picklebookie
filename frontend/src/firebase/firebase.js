@@ -10,7 +10,7 @@ import {
   setDoc,
   connectFirestoreEmulator,
 } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage'; // Add this import
+import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import {
@@ -35,12 +35,11 @@ const app = initializeApp(firebaseConfig);
 
 // Get instances for services
 const auth = getAuth(app);
-// eslint-disable-next-line no-unused-vars
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
 const functions = getFunctions(app);
-const storage = getStorage(app); // Initialize Firebase Storage
+const storage = getStorage(app);
 
 // Create Google provider
 const googleProvider = new GoogleAuthProvider();
@@ -58,7 +57,6 @@ if (process.env.NODE_ENV === 'development') {
 // Function to request notification permission and save the token
 export const requestNotificationPermission = async () => {
   try {
-    // Check if the browser supports notifications
     if (!('Notification' in window)) {
       console.log('This browser does not support notifications');
       return null;
@@ -67,7 +65,6 @@ export const requestNotificationPermission = async () => {
     const permission = await Notification.requestPermission();
 
     if (permission === 'granted') {
-      // Get the token
       const token = await getToken(messaging, {
         vapidKey: VAPID_KEY,
       });
@@ -77,7 +74,11 @@ export const requestNotificationPermission = async () => {
       // Save the token to Firestore for the current user
       const currentUser = auth.currentUser;
       if (currentUser && token) {
-        await saveTokenToFirestore(currentUser.uid, token);
+        await setDoc(
+          doc(db, 'users', currentUser.uid),
+          { fcmToken: token },
+          { merge: true }
+        );
       }
 
       return token;
@@ -91,17 +92,6 @@ export const requestNotificationPermission = async () => {
   }
 };
 
-// Function to save the FCM token to Firestore
-const saveTokenToFirestore = async (userId, token) => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, { fcmToken: token }, { merge: true });
-    console.log('Token saved to Firestore');
-  } catch (error) {
-    console.error('Error saving token to Firestore:', error);
-  }
-};
-
 // Handle foreground messages
 export const onMessageListener = () => {
   return new Promise((resolve) => {
@@ -111,9 +101,6 @@ export const onMessageListener = () => {
     });
   });
 };
-
-// Export the callable function
-export const sendNotification = httpsCallable(functions, 'sendNotification');
 
 // Export the objects
 export { app, auth, googleProvider, db, messaging, storage, functions };

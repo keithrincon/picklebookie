@@ -23,68 +23,16 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const { user: currentUser } = useAuth();
 
-  // Function to fetch followers data
-  const fetchFollowers = useCallback(async () => {
-    try {
-      const followersQuery = query(
-        collection(db, 'followers'),
-        where('followingId', '==', userId)
-      );
-      const followersSnapshot = await getDocs(followersQuery);
-      const followersData = followersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      // Get latest follower count from user document
-      const userRef = doc(db, 'users', userId);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        // Use the counter from the document, fallback to array length
-        setFollowerCount(userData.followerCount ?? followersData.length);
-      }
-    } catch (error) {
-      console.error('Error fetching followers:', error);
-    }
-  }, [userId]);
-
-  // Function to fetch following data
-  const fetchFollowing = useCallback(async () => {
-    try {
-      const followingQuery = query(
-        collection(db, 'followers'),
-        where('followerId', '==', userId)
-      );
-      const followingSnapshot = await getDocs(followingQuery);
-      const followingData = followingSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      // Get latest following count from user document
-      const userRef = doc(db, 'users', userId);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        // Use the counter from the document, fallback to array length
-        setFollowingCount(userData.followingCount ?? followingData.length);
-      }
-    } catch (error) {
-      console.error('Error fetching following:', error);
-    }
-  }, [userId]);
-
   // Fetch profile data
   const fetchProfileData = useCallback(async () => {
     try {
       setLoading(true);
+
       // Fetch user data
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
-        console.log('User data:', userSnap.data());
         const userData = userSnap.data();
         setUser({ id: userSnap.id, ...userData });
 
@@ -107,21 +55,20 @@ const Profile = () => {
         orderBy('createdAt', 'desc')
       );
       const postsSnapshot = await getDocs(postsQuery);
-      setPosts(
-        postsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-      );
 
-      // Fetch followers
-      await fetchFollowers();
+      // Filter out expired posts
+      const currentTime = new Date();
+      const validPosts = postsSnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((post) => post.gameEndTime?.toDate() > currentTime);
 
-      // Fetch following
-      await fetchFollowing();
+      setPosts(validPosts);
     } catch (error) {
       console.error('Error fetching profile data:', error);
     } finally {
       setLoading(false);
     }
-  }, [userId, fetchFollowers, fetchFollowing]);
+  }, [userId]);
 
   useEffect(() => {
     fetchProfileData();
@@ -130,16 +77,9 @@ const Profile = () => {
   // Handle follow status change
   const handleFollowStatusChange = useCallback(
     async (isNowFollowing) => {
-      // Re-fetch followers when follow status changes
-      await fetchFollowers();
-
-      // If the current user is viewing their own profile and they followed/unfollowed someone
-      // we should also update their following count
-      if (currentUser && currentUser.uid === userId) {
-        await fetchFollowing();
-      }
+      await fetchProfileData();
     },
-    [fetchFollowers, fetchFollowing, currentUser, userId]
+    [fetchProfileData]
   );
 
   if (loading) {

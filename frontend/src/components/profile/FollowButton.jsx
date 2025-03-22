@@ -18,7 +18,6 @@ const FollowButton = ({ userId, onFollowStatusChange }) => {
 
     try {
       setLoading(true);
-      // Fixed parameter order - currentUserId, targetUserId
       const following = await checkIsFollowing(user.uid, userId);
       setIsFollowing(following);
     } catch (error) {
@@ -42,12 +41,10 @@ const FollowButton = ({ userId, onFollowStatusChange }) => {
 
     try {
       setLoading(true);
-      // Fixed parameter order - currentUserId, targetUserId
       await followUser(user.uid, userId);
       setIsFollowing(true);
       toast.success('Followed successfully!');
 
-      // Notify parent component about the follow status change
       if (onFollowStatusChange) {
         onFollowStatusChange(true);
       }
@@ -65,12 +62,10 @@ const FollowButton = ({ userId, onFollowStatusChange }) => {
 
     try {
       setLoading(true);
-      // Fixed parameter order - currentUserId, targetUserId
       await unfollowUser(user.uid, userId);
       setIsFollowing(false);
       toast.success('Unfollowed successfully!');
 
-      // Notify parent component about the follow status change
       if (onFollowStatusChange) {
         onFollowStatusChange(false);
       }

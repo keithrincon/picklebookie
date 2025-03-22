@@ -1,10 +1,10 @@
 /* eslint-disable no-undef, no-restricted-globals */
 // Import Firebase scripts
 importScripts(
-  'https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js'
+  'https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js'
 );
 importScripts(
-  'https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js'
+  'https://www.gstatic.com/firebasejs/9.6.10/firebase-messaging-compat.js'
 );
 
 // Initialize Firebase app inside the service worker using public Firebase config
@@ -34,5 +34,6 @@ messaging.onBackgroundMessage((payload) => {
     icon: '/logo192.png', // Update with your app's icon
   };
 
+  // Display the notification
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
