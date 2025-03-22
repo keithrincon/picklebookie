@@ -227,10 +227,15 @@ export const AuthProvider = ({ children }) => {
       // Log the user out
       await logOut();
 
+      // Show success message
       toast.success('Account deleted successfully');
+
+      // Redirect to the home page
+      return true; // Indicate success for redirection in the component
     } catch (error) {
       console.error('Error deleting account:', error);
       toast.error('Failed to delete account. Please try again.');
+      return false; // Indicate failure
     }
   };
 

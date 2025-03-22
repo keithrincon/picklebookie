@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Add useNavigate
 import { db } from '../firebase/firebase';
 import {
   collection,
@@ -15,6 +15,7 @@ import FollowButton from '../components/profile/FollowButton';
 
 const Profile = () => {
   const { userId } = useParams();
+  const navigate = useNavigate(); // Add this line
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [followerCount, setFollowerCount] = useState(0);
@@ -82,24 +83,30 @@ const Profile = () => {
   );
 
   // Confirm delete account with Google re-authentication
-  const confirmDeleteWithGoogle = () => {
+  const confirmDeleteWithGoogle = async () => {
     if (
       window.confirm(
         'Are you sure you want to delete your account? This action cannot be undone.'
       )
     ) {
-      deleteAccount('google');
+      const success = await deleteAccount('google');
+      if (success) {
+        navigate('/'); // Redirect to the home page
+      }
     }
   };
 
   // Confirm delete account with Email Link re-authentication
-  const confirmDeleteWithEmail = () => {
+  const confirmDeleteWithEmail = async () => {
     if (
       window.confirm(
         'Are you sure you want to delete your account? This action cannot be undone.'
       )
     ) {
-      deleteAccount('email');
+      const success = await deleteAccount('email');
+      if (success) {
+        navigate('/'); // Redirect to the home page
+      }
     }
   };
 
