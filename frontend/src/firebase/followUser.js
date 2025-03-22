@@ -34,9 +34,8 @@ export const followUser = async (currentUserId, targetUserId) => {
     // Create the follow relationship
     await setDoc(followerRef, {
       followerId: currentUserId,
-      followingId: targetUserId,
-      followedUserId: targetUserId, // For cloud function
-      followerName, // For notifications
+      followedUserId: targetUserId,
+      followerName,
       createdAt: new Date(),
     });
 
