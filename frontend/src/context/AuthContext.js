@@ -8,8 +8,11 @@ import {
   onAuthStateChanged,
   updateProfile,
   deleteUser,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
+  reauthenticateWithPopup,
+  GoogleAuthProvider,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
 } from 'firebase/auth';
 import {
   doc,
@@ -133,15 +136,42 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
-  // Re-authenticate the user
-  const promptForCredentials = () => {
-    const email = prompt('Enter your email:');
-    const password = prompt('Enter your password:');
-    return EmailAuthProvider.credential(email, password);
+  // Re-authenticate with Google
+  const reauthenticateWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    await reauthenticateWithPopup(user, provider);
+  };
+
+  // Re-authenticate with Email Link
+  const reauthenticateWithEmailLink = async () => {
+    const email = user.email;
+    const actionCodeSettings = {
+      url: window.location.origin, // Redirect URL after re-authentication
+      handleCodeInApp: true,
+    };
+    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+
+    toast.info(
+      'A re-authentication link has been sent to your email. Please check your inbox.'
+    );
+
+    // Wait for the user to click the link
+    const isLinkValid = await new Promise((resolve) => {
+      const interval = setInterval(() => {
+        if (isSignInWithEmailLink(auth, window.location.href)) {
+          clearInterval(interval);
+          resolve(true);
+        }
+      }, 1000);
+    });
+
+    if (isLinkValid) {
+      await signInWithEmailLink(auth, email, window.location.href);
+    }
   };
 
   // Delete account function
-  const deleteAccount = async () => {
+  const deleteAccount = async (reauthenticationMethod) => {
     if (!user) {
       toast.error('You must be logged in to delete your account');
       return;
@@ -149,8 +179,13 @@ export const AuthProvider = ({ children }) => {
 
     try {
       // Re-authenticate the user
-      const credential = promptForCredentials();
-      await reauthenticateWithCredential(user, credential);
+      if (reauthenticationMethod === 'google') {
+        await reauthenticateWithGoogle();
+      } else if (reauthenticationMethod === 'email') {
+        await reauthenticateWithEmailLink();
+      } else {
+        throw new Error('Invalid re-authentication method');
+      }
 
       // Delete user posts
       const postsQuery = query(

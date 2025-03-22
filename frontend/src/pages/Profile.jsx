@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom'; // Remove unused `useNavigate`
+import { useParams } from 'react-router-dom';
 import { db } from '../firebase/firebase';
 import {
   collection,
@@ -81,14 +81,25 @@ const Profile = () => {
     [fetchProfileData]
   );
 
-  // Confirm delete account
-  const confirmDelete = () => {
+  // Confirm delete account with Google re-authentication
+  const confirmDeleteWithGoogle = () => {
     if (
       window.confirm(
         'Are you sure you want to delete your account? This action cannot be undone.'
       )
     ) {
-      deleteAccount();
+      deleteAccount('google');
+    }
+  };
+
+  // Confirm delete account with Email Link re-authentication
+  const confirmDeleteWithEmail = () => {
+    if (
+      window.confirm(
+        'Are you sure you want to delete your account? This action cannot be undone.'
+      )
+    ) {
+      deleteAccount('email');
     }
   };
 
@@ -117,12 +128,20 @@ const Profile = () => {
             </div>
             <div className='flex gap-3 w-full md:w-auto'>
               {currentUser && currentUser.uid === userId ? (
-                <button
-                  onClick={confirmDelete}
-                  className='w-full bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded transition'
-                >
-                  Delete Account
-                </button>
+                <div className='flex flex-col gap-2 w-full'>
+                  <button
+                    onClick={confirmDeleteWithGoogle}
+                    className='w-full bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded transition'
+                  >
+                    Delete Account with Google
+                  </button>
+                  <button
+                    onClick={confirmDeleteWithEmail}
+                    className='w-full bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded transition'
+                  >
+                    Delete Account with Email Link
+                  </button>
+                </div>
               ) : (
                 currentUser && (
                   <div className='w-full'>
