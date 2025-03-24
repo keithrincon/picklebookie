@@ -6,7 +6,7 @@ import {
   updateDoc,
   increment,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db } from '@firebase/firebase';
 
 /**
  * Follow a user by creating a document in the `followers` collection and updating user counts.
