@@ -6,93 +6,94 @@ import {
 } from 'firebase/auth';
 import {
   getFirestore,
-  doc,
-  setDoc,
   connectFirestoreEmulator,
+  enableIndexedDbPersistence,
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging } from 'firebase/messaging';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
-// Firebase configuration
+// ========================
+// FIREBASE CONFIGURATION
+// ========================
+
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: 'picklebookie',
-  storageBucket: 'picklebookie.appspot.com',
-  messagingSenderId: '921444216697',
-  appId: '1:921444216697:web:f0d6001e28e44a4bee89a8',
-  measurementId: 'G-Z4SW9ZNEW2',
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize App Check (no variable assignment needed)
-initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_SITE_KEY),
-  isTokenAutoRefreshEnabled: true, // Auto-refresh enabled for 7-day TTL
+// ========================
+// SERVICES INITIALIZATION
+// ========================
+
+// 1. Auth
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+
+// 2. Firestore with Offline Support
+const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn('Offline persistence already enabled');
+  } else {
+    console.error('Offline persistence error:', err);
+  }
 });
 
-// Get service instances
-const auth = getAuth(app);
-const db = getFirestore(app);
+// 3. Other Services
 const messaging = getMessaging(app);
 const functions = getFunctions(app);
 const storage = getStorage(app);
-const googleProvider = new GoogleAuthProvider();
 
-// Connect to emulators in development
+// ========================
+// APP CHECK (RECAPTCHA V3)
+// ========================
+
+const initializeAppCheckWithRetry = (attempts = 0) => {
+  try {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(
+        process.env.REACT_APP_RECAPTCHA_SITE_KEY
+      ),
+      isTokenAutoRefreshEnabled: true,
+    });
+    console.log('App Check initialized successfully');
+  } catch (error) {
+    if (attempts < 3) {
+      console.warn(`App Check retry attempt ${attempts + 1}`);
+      setTimeout(() => initializeAppCheckWithRetry(attempts + 1), 2000);
+    } else {
+      console.error('App Check failed after 3 attempts:', error);
+    }
+  }
+};
+initializeAppCheckWithRetry();
+
+// ========================
+// DEVELOPMENT EMULATORS
+// ========================
+
 if (process.env.NODE_ENV === 'development') {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099');
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
-  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
+  connectAuthEmulator(auth, 'http://localhost:9099');
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectFunctionsEmulator(functions, 'localhost', 5001);
 
   // Debug mode for App Check
   window.self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-  console.log('Firebase emulators & App Check debug enabled');
+  console.log('Firebase emulators initialized in development mode');
 }
 
-// Notification handler
-export const requestNotificationPermission = async () => {
-  try {
-    if (!('Notification' in window)) {
-      console.warn("Browser doesn't support notifications");
-      return null;
-    }
+// ========================
+// EXPORTS
+// ========================
 
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return null;
-
-    const token = await getToken(messaging, {
-      vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
-    });
-
-    if (auth.currentUser?.uid && token) {
-      await setDoc(
-        doc(db, 'users', auth.currentUser.uid),
-        { fcmToken: token },
-        { merge: true }
-      );
-    }
-
-    return token;
-  } catch (error) {
-    console.error('Notification error:', error);
-    return null;
-  }
-};
-
-// Foreground message handler
-export const onMessageListener = () => {
-  return new Promise((resolve) => {
-    onMessage(messaging, (payload) => {
-      console.debug('New FCM message:', payload);
-      resolve(payload);
-    });
-  });
-};
-
-// Exports
-export { app, auth, googleProvider, db, messaging, storage, functions };
+export { app, auth, googleProvider, db, messaging, functions, storage };
