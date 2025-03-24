@@ -86,12 +86,7 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
-    // New plugin for line-clamp
-    require('@tailwindcss/line-clamp'),
-  ],
+  plugins: [require('@tailwindcss/forms'), require('@tailwindcss/typography')],
   variants: {
     extend: {
       boxShadow: ['hover'],
