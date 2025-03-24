@@ -3,7 +3,7 @@ import { db } from '../../firebase/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
-import { geocodeLocation } from '../../services/locationServices';
+import { geocodeLocation } from '../../../services/locationServices';
 
 const CreatePost = () => {
   // Form state
