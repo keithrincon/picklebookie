@@ -1,110 +1,108 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { db } from '../firebase/firebase';
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore';
-import { useAuth } from './AuthContext'; // Import useAuth to get the current user
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { useAuth } from './AuthContext';
 
-// Create a context for posts
 const PostsContext = createContext();
 
-// Custom hook to use the posts context
 export const usePosts = () => useContext(PostsContext);
 
-// Posts provider component
 export const PostsProvider = ({ children }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user } = useAuth(); // Get the current user
+  const [userLocation, setUserLocation] = useState(null);
+  const { user } = useAuth();
+
+  // Get user location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.log('Location access denied, using default radius');
+          setUserLocation(null);
+        }
+      );
+    }
+  }, []);
+
+  // Calculate distance between two coordinates (Haversine formula)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c * 0.621371; // Convert to miles
+  };
 
   useEffect(() => {
     if (!user) {
-      console.log('User is not authenticated. Skipping posts fetch.'); // Debug log
       setLoading(false);
-      return; // Don't fetch posts if the user isn't authenticated
+      return;
     }
 
     setLoading(true);
-
-    // Create a query to get posts ordered by date
     const postsQuery = query(collection(db, 'posts'), orderBy('date', 'asc'));
 
-    console.log('Fetching posts from Firestore...'); // Debug log
-    console.log('Authenticated user UID:', user.uid); // Debug log
-
-    // Set up a real-time listener
     const unsubscribe = onSnapshot(
       postsQuery,
       (querySnapshot) => {
-        console.log('Firestore query snapshot:', querySnapshot); // Debug log
+        try {
+          const postsList = querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              distance: userLocation
+                ? calculateDistance(
+                    userLocation.lat,
+                    userLocation.lng,
+                    data.latitude,
+                    data.longitude
+                  ).toFixed(1)
+                : null,
+            };
+          });
 
-        if (querySnapshot.empty) {
-          console.warn('No posts found in the query snapshot.'); // Debug log
-          setPosts([]); // Set posts to an empty array if no posts are found
+          // Filter posts within 10 miles if location available
+          const filteredPosts = userLocation
+            ? postsList.filter((post) => post.distance <= 10)
+            : postsList;
+
+          setPosts(filteredPosts);
+        } catch (err) {
+          setError('Error processing posts');
+          console.error(err);
+        } finally {
           setLoading(false);
-          return;
         }
-
-        const postsList = querySnapshot.docs.map((doc) => {
-          const data = doc.data();
-          console.log('Fetched post:', data); // Debug log
-
-          // Handle missing or invalid createdAt field
-          let createdAt;
-          if (data.createdAt instanceof Timestamp) {
-            createdAt = data.createdAt.toDate();
-          } else if (data.createdAt) {
-            createdAt = new Date(data.createdAt);
-          } else {
-            console.warn('Post is missing createdAt field:', doc.id); // Debug log
-            createdAt = new Date(); // Fallback to current date
-          }
-
-          // Handle missing or invalid date field
-          let date;
-          if (data.date) {
-            date = data.date; // Use the string value directly
-          } else {
-            console.warn('Post is missing date field:', doc.id); // Debug log
-            date = new Date().toISOString().split('T')[0]; // Fallback to current date
-          }
-
-          return {
-            id: doc.id,
-            ...data,
-            createdAt,
-            date,
-          };
-        });
-
-        console.log('All posts:', postsList); // Debug log
-        setPosts(postsList);
-        setLoading(false);
       },
       (err) => {
-        console.error('Error fetching posts:', err); // Debug log
-        setError('Failed to load posts. Please try again later.');
+        setError('Failed to load posts');
         setLoading(false);
+        console.error(err);
       }
     );
 
-    // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [user]); // Re-run the effect when the user changes
-
-  // Value to provide to the context
-  const value = {
-    posts,
-    loading,
-    error,
-  };
+  }, [user, userLocation]);
 
   return (
-    <PostsContext.Provider value={value}>{children}</PostsContext.Provider>
+    <PostsContext.Provider value={{ posts, loading, error, userLocation }}>
+      {children}
+    </PostsContext.Provider>
   );
 };

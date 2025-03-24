@@ -1,30 +1,30 @@
 import React, { useState } from 'react';
-import { db } from '../../firebase/firebase'; // Adjusted path
+import { db } from '../../firebase/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { useAuth } from '../../context/AuthContext'; // Adjusted path
+import { useAuth } from '../../context/AuthContext';
+import axios from 'axios'; // For geocoding API requests
 
 const CreatePost = () => {
-  // Form state
   const [formData, setFormData] = useState({
     startHour: '',
     startMinute: '00',
-    startPeriod: 'AM', // Default to AM
+    startPeriod: 'AM',
     endHour: '',
     endMinute: '00',
-    endPeriod: 'AM', // Default to AM
+    endPeriod: 'AM',
     date: '',
     location: '',
     type: 'Practice',
     description: '',
+    latitude: null,
+    longitude: null,
   });
 
-  // UI state
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
-  // Options for select fields
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
   const minutes = Array.from({ length: 12 }, (_, i) => i * 5).map((m) =>
     m < 10 ? `0${m}` : `${m}`
@@ -38,7 +38,6 @@ const CreatePost = () => {
     'Oak Park Courts',
   ];
 
-  // Get today's date in YYYY-MM-DD format based on local timezone
   const getTodayLocalDate = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -47,7 +46,6 @@ const CreatePost = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Handle all form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -57,7 +55,24 @@ const CreatePost = () => {
     if (error) setError('');
   };
 
-  // Validate form data
+  const geocodeLocation = async (location) => {
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          location
+        )}&key=AIzaSyBatTh7pr0fDw5o7WsGZnllCkov7sjFgRo`
+      );
+      if (response.data.results.length > 0) {
+        const { lat, lng } = response.data.results[0].geometry.location;
+        return { latitude: lat, longitude: lng };
+      }
+      throw new Error('Location not found');
+    } catch (error) {
+      console.error('Error geocoding location:', error);
+      throw error;
+    }
+  };
+
   const validateForm = () => {
     const {
       startHour,
@@ -76,31 +91,22 @@ const CreatePost = () => {
       return false;
     }
 
-    // Compare date with local today's date
     const todayStr = getTodayLocalDate();
-
     if (date < todayStr) {
       setError('Please select today or a future date.');
       return false;
     }
 
-    // Calculate max date (3 months from now) using local date
     const maxDate = new Date();
     maxDate.setMonth(maxDate.getMonth() + 3);
-    const maxYear = maxDate.getFullYear();
-    const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
-    const maxDay = String(maxDate.getDate()).padStart(2, '0');
-    const maxDateStr = `${maxYear}-${maxMonth}-${maxDay}`;
-
+    const maxDateStr = maxDate.toISOString().split('T')[0];
     if (date > maxDateStr) {
       setError('You can only create posts up to 3 months in advance.');
       return false;
     }
 
-    // Create Date objects for time comparison
     const startTime = convertTo24Hour(startHour, startMinute, startPeriod);
     const endTime = convertTo24Hour(endHour, endMinute, endPeriod);
-
     if (endTime <= startTime) {
       setError('End time must be after start time.');
       return false;
@@ -109,7 +115,6 @@ const CreatePost = () => {
     return true;
   };
 
-  // Helper function to convert time to 24-hour format for comparison
   const convertTo24Hour = (hour, minute, period) => {
     let h = parseInt(hour);
     if (period === 'PM' && h < 12) h += 12;
@@ -117,7 +122,6 @@ const CreatePost = () => {
     return h * 60 + parseInt(minute);
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -128,38 +132,41 @@ const CreatePost = () => {
     }
 
     try {
+      const { latitude, longitude } = await geocodeLocation(formData.location);
+
       const newPost = {
         startTime: `${formData.startHour}:${formData.startMinute} ${formData.startPeriod}`,
         endTime: `${formData.endHour}:${formData.endMinute} ${formData.endPeriod}`,
         date: formData.date,
         location: formData.location,
+        latitude,
+        longitude,
         type: formData.type,
         description: formData.description || '',
         userId: user.uid,
         userName: user.displayName || user.email,
-        createdAt: Timestamp.now(), // Use Firestore Timestamp
+        createdAt: Timestamp.now(),
       };
 
-      // Add the document to Firestore
       await addDoc(collection(db, 'posts'), newPost);
 
-      // Clear the form
       setFormData({
         startHour: '',
         startMinute: '00',
-        startPeriod: 'AM', // Reset to AM
+        startPeriod: 'AM',
         endHour: '',
         endMinute: '00',
-        endPeriod: 'AM', // Reset to AM
+        endPeriod: 'AM',
         date: '',
         location: '',
         type: 'Practice',
         description: '',
+        latitude: null,
+        longitude: null,
       });
 
       setError('');
       setSuccess('Your game post has been created!');
-
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error creating post:', error);
@@ -174,19 +181,16 @@ const CreatePost = () => {
       <h2 className='text-2xl font-bold text-pickle-green mb-6 font-poppins'>
         Create a Game Post
       </h2>
-
       {error && (
         <div className='mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded'>
           {error}
         </div>
       )}
-
       {success && (
         <div className='mb-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded'>
           {success}
         </div>
       )}
-
       <form onSubmit={handleSubmit} className='space-y-4'>
         {/* Date Picker */}
         <div>
@@ -205,7 +209,6 @@ const CreatePost = () => {
             min={getTodayLocalDate()}
             className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             required
-            aria-label='Select date'
           />
         </div>
 
@@ -228,7 +231,6 @@ const CreatePost = () => {
                   onChange={handleChange}
                   className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
                   required
-                  aria-label='Select start hour'
                 >
                   <option value='' disabled>
                     Hour
@@ -248,7 +250,6 @@ const CreatePost = () => {
                   value={formData.startMinute}
                   onChange={handleChange}
                   className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
-                  aria-label='Select start minute'
                 >
                   {minutes.map((m) => (
                     <option key={`start-min-${m}`} value={m}>
@@ -265,7 +266,6 @@ const CreatePost = () => {
                   value={formData.startPeriod}
                   onChange={handleChange}
                   className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
-                  aria-label='Select start period'
                 >
                   <option value='AM'>AM</option>
                   <option value='PM'>PM</option>
@@ -291,7 +291,6 @@ const CreatePost = () => {
                   onChange={handleChange}
                   className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
                   required
-                  aria-label='Select end hour'
                 >
                   <option value='' disabled>
                     Hour
@@ -311,7 +310,6 @@ const CreatePost = () => {
                   value={formData.endMinute}
                   onChange={handleChange}
                   className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
-                  aria-label='Select end minute'
                 >
                   {minutes.map((m) => (
                     <option key={`end-min-${m}`} value={m}>
@@ -328,7 +326,6 @@ const CreatePost = () => {
                   value={formData.endPeriod}
                   onChange={handleChange}
                   className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
-                  aria-label='Select end period'
                 >
                   <option value='AM'>AM</option>
                   <option value='PM'>PM</option>
@@ -356,7 +353,6 @@ const CreatePost = () => {
             placeholder='Enter or select a location'
             className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             required
-            aria-label='Enter location'
           />
           <datalist id='locationSuggestions'>
             {locationSuggestions.map((loc) => (
@@ -380,7 +376,6 @@ const CreatePost = () => {
             onChange={handleChange}
             className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             required
-            aria-label='Select game type'
           >
             {gameTypes.map((type) => (
               <option key={type} value={type}>
@@ -406,7 +401,6 @@ const CreatePost = () => {
             placeholder='Add any additional details about this game...'
             rows={3}
             className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
-            aria-label='Enter description'
           />
         </div>
 
