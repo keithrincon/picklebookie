@@ -20,8 +20,8 @@ const CreatePost = () => {
   });
 
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [locationValid, setLocationValid] = useState(false);
   const { user } = useAuth();
 
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -51,6 +51,11 @@ const CreatePost = () => {
       ...formData,
       [name]: value,
     });
+
+    if (name === 'location') {
+      setLocationValid(false);
+    }
+
     if (error) setError('');
   };
 
@@ -103,6 +108,30 @@ const CreatePost = () => {
     return h * 60 + parseInt(minute);
   };
 
+  const geocodeLocation = async (location) => {
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          location
+        )}&key=AIzaSyBatTh7pr0fDw5o7WsGZnllCkov7sjFgRo`
+      );
+
+      if (response.data.results.length > 0) {
+        const result = response.data.results[0];
+        return {
+          latitude: result.geometry.location.lat,
+          longitude: result.geometry.location.lng,
+          formattedAddress: result.formatted_address || location,
+          valid: true,
+        };
+      }
+      return { valid: false };
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      return { valid: false };
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -113,43 +142,35 @@ const CreatePost = () => {
     }
 
     try {
-      // First try geocoding
-      let latitude = null;
-      let longitude = null;
+      // Geocode the location
+      const geocodeResult = await geocodeLocation(formData.location);
 
-      try {
-        const geocodeResponse = await axios.get(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-            formData.location
-          )}&key=AIzaSyBatTh7pr0fDw5o7WsGZnllCkov7sjFgRo`
+      if (!geocodeResult.valid) {
+        toast.warn(
+          'Could not verify exact location. Your post will still be created but may be harder to find.'
         );
-
-        if (geocodeResponse.data.results.length > 0) {
-          latitude = geocodeResponse.data.results[0].geometry.location.lat;
-          longitude = geocodeResponse.data.results[0].geometry.location.lng;
-        }
-      } catch (geocodeError) {
-        console.warn(
-          'Geocoding failed, saving without coordinates:',
-          geocodeError
-        );
+      } else {
+        setLocationValid(true);
       }
 
       const newPost = {
         startTime: `${formData.startHour}:${formData.startMinute} ${formData.startPeriod}`,
         endTime: `${formData.endHour}:${formData.endMinute} ${formData.endPeriod}`,
         date: formData.date,
-        location: formData.location,
+        location: geocodeResult.formattedAddress || formData.location,
         type: formData.type,
         description: formData.description || '',
         userId: user.uid,
         userName: user.displayName || user.email,
         createdAt: Timestamp.now(),
         joinedPlayers: [],
-        ...(latitude && longitude ? { latitude, longitude } : {}),
+        hasExactLocation: geocodeResult.valid,
+        ...(geocodeResult.valid && {
+          latitude: geocodeResult.latitude,
+          longitude: geocodeResult.longitude,
+        }),
       };
 
-      // Submit to Firestore
       await addDoc(collection(db, 'posts'), newPost);
 
       // Reset form
@@ -167,32 +188,30 @@ const CreatePost = () => {
       });
 
       setError('');
-      setSuccess('Game created successfully!');
-      toast.success('Game posted successfully!');
+      setLocationValid(false);
+      toast.success('Game created successfully!', {
+        className: 'bg-success text-white',
+      });
     } catch (error) {
       console.error('Submission error:', error);
       setError('Failed to create game. Please try again.');
-      toast.error('Failed to create game');
+      toast.error('Failed to create game', {
+        className: 'bg-error text-white',
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className='bg-white p-6 rounded-lg shadow-md'>
+    <div className='bg-white p-6 rounded-lg shadow-card'>
       <h2 className='text-2xl font-bold text-pickle-green mb-6 font-poppins'>
         Create a Game Post
       </h2>
 
       {error && (
-        <div className='mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded'>
+        <div className='mb-4 p-3 bg-error/10 border border-error/20 text-error rounded'>
           {error}
-        </div>
-      )}
-
-      {success && (
-        <div className='mb-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded'>
-          {success}
         </div>
       )}
 
@@ -201,9 +220,9 @@ const CreatePost = () => {
         <div>
           <label
             htmlFor='date'
-            className='block text-sm font-medium text-gray-700 mb-2'
+            className='block text-sm font-medium text-dark-gray mb-2'
           >
-            Date <span className='text-red-500'>*</span>
+            Date <span className='text-error'>*</span>
           </label>
           <input
             type='date'
@@ -212,7 +231,7 @@ const CreatePost = () => {
             value={formData.date}
             onChange={handleChange}
             min={getTodayLocalDate()}
-            className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+            className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green'
             required
           />
         </div>
@@ -223,9 +242,9 @@ const CreatePost = () => {
           <div>
             <label
               htmlFor='startHour'
-              className='block text-sm font-medium text-gray-700 mb-2'
+              className='block text-sm font-medium text-dark-gray mb-2'
             >
-              Start Time <span className='text-red-500'>*</span>
+              Start Time <span className='text-error'>*</span>
             </label>
             <div className='flex space-x-2'>
               <div className='w-1/3'>
@@ -234,7 +253,7 @@ const CreatePost = () => {
                   name='startHour'
                   value={formData.startHour}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
+                  className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green text-sm'
                   required
                 >
                   <option value='' disabled>
@@ -254,7 +273,7 @@ const CreatePost = () => {
                   name='startMinute'
                   value={formData.startMinute}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
+                  className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green text-sm'
                 >
                   {minutes.map((m) => (
                     <option key={`start-min-${m}`} value={m}>
@@ -270,7 +289,7 @@ const CreatePost = () => {
                   name='startPeriod'
                   value={formData.startPeriod}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
+                  className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green text-sm'
                 >
                   <option value='AM'>AM</option>
                   <option value='PM'>PM</option>
@@ -283,9 +302,9 @@ const CreatePost = () => {
           <div>
             <label
               htmlFor='endHour'
-              className='block text-sm font-medium text-gray-700 mb-2'
+              className='block text-sm font-medium text-dark-gray mb-2'
             >
-              End Time <span className='text-red-500'>*</span>
+              End Time <span className='text-error'>*</span>
             </label>
             <div className='flex space-x-2'>
               <div className='w-1/3'>
@@ -294,7 +313,7 @@ const CreatePost = () => {
                   name='endHour'
                   value={formData.endHour}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
+                  className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green text-sm'
                   required
                 >
                   <option value='' disabled>
@@ -314,7 +333,7 @@ const CreatePost = () => {
                   name='endMinute'
                   value={formData.endMinute}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
+                  className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green text-sm'
                 >
                   {minutes.map((m) => (
                     <option key={`end-min-${m}`} value={m}>
@@ -330,7 +349,7 @@ const CreatePost = () => {
                   name='endPeriod'
                   value={formData.endPeriod}
                   onChange={handleChange}
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm appearance-none'
+                  className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green text-sm'
                 >
                   <option value='AM'>AM</option>
                   <option value='PM'>PM</option>
@@ -344,42 +363,53 @@ const CreatePost = () => {
         <div>
           <label
             htmlFor='location'
-            className='block text-sm font-medium text-gray-700 mb-2'
+            className='block text-sm font-medium text-dark-gray mb-2'
           >
-            Location <span className='text-red-500'>*</span>
+            Location <span className='text-error'>*</span>
           </label>
-          <input
-            type='text'
-            id='location'
-            name='location'
-            value={formData.location}
-            onChange={handleChange}
-            list='locationSuggestions'
-            placeholder='Enter or select a location'
-            className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
-            required
-          />
+          <div className='relative'>
+            <input
+              type='text'
+              id='location'
+              name='location'
+              value={formData.location}
+              onChange={handleChange}
+              list='locationSuggestions'
+              placeholder='Enter court name or address'
+              className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green'
+              required
+            />
+            {locationValid && (
+              <span className='absolute right-3 top-2.5 text-success'>
+                ✓ Verified
+              </span>
+            )}
+          </div>
           <datalist id='locationSuggestions'>
             {locationSuggestions.map((loc) => (
               <option key={loc} value={loc} />
             ))}
           </datalist>
+          <p className='mt-1 text-xs text-medium-gray'>
+            Include city/state for better results (e.g., "Central Park, New
+            York")
+          </p>
         </div>
 
         {/* Game Type */}
         <div>
           <label
             htmlFor='type'
-            className='block text-sm font-medium text-gray-700 mb-2'
+            className='block text-sm font-medium text-dark-gray mb-2'
           >
-            Game Type <span className='text-red-500'>*</span>
+            Game Type <span className='text-error'>*</span>
           </label>
           <select
             id='type'
             name='type'
             value={formData.type}
             onChange={handleChange}
-            className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+            className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green'
             required
           >
             {gameTypes.map((type) => (
@@ -394,18 +424,18 @@ const CreatePost = () => {
         <div>
           <label
             htmlFor='description'
-            className='block text-sm font-medium text-gray-700 mb-2'
+            className='block text-sm font-medium text-dark-gray mb-2'
           >
-            Description <span className='text-gray-400'>(optional)</span>
+            Description <span className='text-medium-gray'>(optional)</span>
           </label>
           <textarea
             id='description'
             name='description'
             value={formData.description}
             onChange={handleChange}
-            placeholder='Add any additional details about this game...'
+            placeholder='Add any additional details (skill level, equipment needed, etc.)'
             rows={3}
-            className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+            className='block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green'
           />
         </div>
 
@@ -413,7 +443,9 @@ const CreatePost = () => {
         <button
           type='submit'
           disabled={isSubmitting}
-          className='w-full bg-pickle-green text-white py-2 px-4 rounded-md hover:bg-pickle-green-dark focus:outline-none focus:ring-2 focus:ring-pickle-green-light focus:ring-offset-2 transition-colors disabled:opacity-75'
+          className={`w-full bg-pickle-green text-white py-2 px-4 rounded-md hover:bg-pickle-green-dark focus:outline-none focus:ring-2 focus:ring-pickle-green-light focus:ring-offset-2 transition-colors ${
+            isSubmitting ? 'opacity-75' : ''
+          }`}
         >
           {isSubmitting ? (
             <div className='flex justify-center items-center'>

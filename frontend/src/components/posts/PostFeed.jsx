@@ -16,9 +16,11 @@ const PostFeed = () => {
           (a, b) => new Date(a.date) - new Date(b.date)
         );
       case 'closest':
-        return userLocation
-          ? [...postsToSort].sort((a, b) => a.distance - b.distance)
-          : postsToSort;
+        return [...postsToSort].sort((a, b) => {
+          if (a.distance === null) return 1;
+          if (b.distance === null) return -1;
+          return a.distance - b.distance;
+        });
       default:
         return postsToSort;
     }
@@ -27,7 +29,7 @@ const PostFeed = () => {
   if (loading) {
     return (
       <div className='flex justify-center items-center h-64'>
-        <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600'></div>
+        <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pickle-green'></div>
       </div>
     );
   }
@@ -45,24 +47,26 @@ const PostFeed = () => {
       {posts.length > 0 ? (
         <>
           <div className='flex justify-between items-center mb-4'>
-            <div className='text-sm text-gray-600'>
+            <div className='text-sm text-medium-gray'>
               {userLocation
-                ? `Showing games within 10 miles of you`
-                : `Showing all games (enable location for nearby games)`}
+                ? `Showing ${
+                    posts.filter((post) => post.distance !== null).length
+                  } nearby games`
+                : `Showing all games (enable location for distance information)`}
             </div>
             <div className='flex items-center'>
-              <label htmlFor='sortBy' className='mr-2 text-sm text-gray-600'>
+              <label htmlFor='sortBy' className='mr-2 text-sm text-medium-gray'>
                 Sort by:
               </label>
               <select
                 id='sortBy'
-                className='text-sm border border-gray-300 rounded p-1 focus:outline-none focus:ring-1 focus:ring-pickle-green'
+                className='text-sm border border-light-gray rounded p-1 focus:outline-none focus:ring-1 focus:ring-pickle-green'
                 onChange={(e) => setSortBy(e.target.value)}
                 value={sortBy}
               >
                 <option value='soonest'>Soonest</option>
                 <option value='newest'>Newest</option>
-                {userLocation && <option value='closest'>Closest</option>}
+                {userLocation && <option value='closest'>Nearest</option>}
               </select>
             </div>
           </div>
@@ -79,14 +83,28 @@ const PostFeed = () => {
               >
                 <div className='flex justify-between items-start'>
                   <div>
-                    <p className='font-medium text-pickle-green'>{post.type}</p>
-                    <p className='text-sm text-gray-500'>
+                    <p
+                      className={`font-medium ${
+                        post.type === 'Practice'
+                          ? 'text-practice-text'
+                          : post.type === 'Singles'
+                          ? 'text-singles-text'
+                          : 'text-doubles-text'
+                      }`}
+                    >
+                      {post.type}
+                    </p>
+                    <p className='text-sm text-medium-gray'>
                       {new Date(post.date).toLocaleDateString()}
                     </p>
                   </div>
-                  {post.distance && (
-                    <span className='bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full'>
+                  {post.distance !== null ? (
+                    <span className='bg-distance-bg text-distance-text text-xs px-2 py-1 rounded-full'>
                       {post.distance} mi
+                    </span>
+                  ) : (
+                    <span className='bg-approximate-bg text-approximate-text text-xs px-2 py-1 rounded-full'>
+                      Approx
                     </span>
                   )}
                 </div>
@@ -138,10 +156,8 @@ const PostFeed = () => {
         </>
       ) : (
         <div className='bg-white p-8 rounded-lg shadow-md text-center'>
-          <p className='text-gray-500'>
-            {userLocation
-              ? 'No games found within 10 miles'
-              : 'No games available'}
+          <p className='text-medium-gray'>
+            {userLocation ? 'No games found nearby' : 'No games available'}
           </p>
         </div>
       )}

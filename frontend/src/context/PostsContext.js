@@ -16,24 +16,29 @@ export const PostsProvider = ({ children }) => {
 
   // Get user location
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
+    const getLocation = async () => {
+      try {
+        if (navigator.geolocation) {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
-        },
-        (error) => {
-          console.log('Location access denied, using default radius');
-          setUserLocation(null);
         }
-      );
-    }
+      } catch (err) {
+        console.log('Using location services disabled');
+        setUserLocation(null);
+      }
+    };
+
+    getLocation();
   }, []);
 
-  // Calculate distance between two coordinates (Haversine formula)
+  // Calculate distance between two coordinates
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lat2) return null;
     const R = 6371; // Earth's radius in km
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -62,29 +67,35 @@ export const PostsProvider = ({ children }) => {
         try {
           const postsList = querySnapshot.docs.map((doc) => {
             const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              createdAt: data.createdAt?.toDate() || new Date(),
-              distance: userLocation
+            const distance =
+              userLocation && data.latitude
                 ? calculateDistance(
                     userLocation.lat,
                     userLocation.lng,
                     data.latitude,
                     data.longitude
-                  ).toFixed(1)
-                : null,
+                  )
+                : null;
+
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              distance: distance ? parseFloat(distance.toFixed(1)) : null,
+              isNearby: distance ? distance <= 10 : false,
             };
           });
 
-          // Filter posts within 10 miles if location available
-          const filteredPosts = userLocation
-            ? postsList.filter((post) => post.distance <= 10)
-            : postsList;
+          // Sort posts: nearby first, then others
+          const sortedPosts = [...postsList].sort((a, b) => {
+            if (a.isNearby && !b.isNearby) return -1;
+            if (!a.isNearby && b.isNearby) return 1;
+            return new Date(a.date) - new Date(b.date);
+          });
 
-          setPosts(filteredPosts);
+          setPosts(sortedPosts);
         } catch (err) {
-          setError('Error processing posts');
+          setError('Error loading posts');
           console.error(err);
         } finally {
           setLoading(false);
@@ -101,7 +112,15 @@ export const PostsProvider = ({ children }) => {
   }, [user, userLocation]);
 
   return (
-    <PostsContext.Provider value={{ posts, loading, error, userLocation }}>
+    <PostsContext.Provider
+      value={{
+        posts,
+        loading,
+        error,
+        userLocation,
+        locationEnabled: !!userLocation,
+      }}
+    >
       {children}
     </PostsContext.Provider>
   );
