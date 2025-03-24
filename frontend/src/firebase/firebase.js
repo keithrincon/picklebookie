@@ -13,6 +13,7 @@ import {
 import { getStorage } from 'firebase/storage';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -28,73 +29,70 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Get instances for services
+// Initialize App Check (no variable assignment needed)
+initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_SITE_KEY),
+  isTokenAutoRefreshEnabled: true, // Auto-refresh enabled for 7-day TTL
+});
+
+// Get service instances
 const auth = getAuth(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
 const functions = getFunctions(app);
 const storage = getStorage(app);
-
-// Create Google provider
 const googleProvider = new GoogleAuthProvider();
-
-// VAPID key for web push notifications
-const VAPID_KEY = process.env.REACT_APP_FIREBASE_VAPID_KEY;
 
 // Connect to emulators in development
 if (process.env.NODE_ENV === 'development') {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099'); // Auth emulator
-  connectFirestoreEmulator(db, '127.0.0.1', 8080); // Firestore emulator
-  connectFunctionsEmulator(functions, '127.0.0.1', 5001); // Functions emulator
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099');
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
+
+  // Debug mode for App Check
+  window.self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  console.log('Firebase emulators & App Check debug enabled');
 }
 
-// Function to request notification permission and save the token
+// Notification handler
 export const requestNotificationPermission = async () => {
   try {
     if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
+      console.warn("Browser doesn't support notifications");
       return null;
     }
 
     const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return null;
 
-    if (permission === 'granted') {
-      const token = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-      });
+    const token = await getToken(messaging, {
+      vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
+    });
 
-      console.log('Notification token:', token);
-
-      // Save the token to Firestore for the current user
-      const currentUser = auth.currentUser;
-      if (currentUser && token) {
-        await setDoc(
-          doc(db, 'users', currentUser.uid),
-          { fcmToken: token },
-          { merge: true }
-        );
-      }
-
-      return token;
-    } else {
-      console.log('Permission not granted');
-      return null;
+    if (auth.currentUser?.uid && token) {
+      await setDoc(
+        doc(db, 'users', auth.currentUser.uid),
+        { fcmToken: token },
+        { merge: true }
+      );
     }
+
+    return token;
   } catch (error) {
-    console.error('Error requesting notification permission:', error);
+    console.error('Notification error:', error);
     return null;
   }
 };
 
-// Handle foreground messages
+// Foreground message handler
 export const onMessageListener = () => {
   return new Promise((resolve) => {
     onMessage(messaging, (payload) => {
-      console.log('Message received in foreground:', payload);
+      console.debug('New FCM message:', payload);
       resolve(payload);
     });
   });
 };
 
-// Export the objects
+// Exports
 export { app, auth, googleProvider, db, messaging, storage, functions };
