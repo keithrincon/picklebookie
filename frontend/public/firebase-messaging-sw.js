@@ -5,39 +5,49 @@ importScripts(
 );
 
 // Initialize Firebase
-firebase.initializeApp({
+const firebaseConfig = {
   apiKey: 'AIzaSyCJxpMsMUGsxlD54bGjj3-aftTK3pm5DRk',
   authDomain: 'picklebookie.firebaseapp.com',
   projectId: 'picklebookie',
   storageBucket: 'picklebookie.appspot.com',
   messagingSenderId: '921444216697',
   appId: '1:921444216697:web:f0d6001e28e44a4bee89a8',
-});
+};
+
+// Debugging point 1
+console.log('[SW] Initializing Firebase with config:', firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
+console.log('[SW] Firebase Messaging initialized');
 
-// Notification assets fallback
+// Notification assets
 const DEFAULT_ICON = '/logo192.png';
-const DEFAULT_BADGE = '/badge.png'; // Will silently fail if missing
+const DEFAULT_BADGE = '/badge.png';
 
+// Enhanced background message handler
 messaging.onBackgroundMessage((payload) => {
-  try {
-    const notificationOptions = {
-      title: payload.notification?.title || 'New update',
-      body: payload.notification?.body || 'You have a new notification',
-      icon: payload.notification?.icon || DEFAULT_ICON,
-      data: payload.data || {},
-      // Badge will be ignored if missing - no error thrown
-      ...(payload.notification?.badge && { badge: DEFAULT_BADGE }),
-    };
+  console.log('[SW] Received background message:', payload);
 
-    self.registration.showNotification(
-      notificationOptions.title,
-      notificationOptions
-    );
+  const notificationTitle = payload.notification?.title || 'New message';
+  const notificationOptions = {
+    body: payload.notification?.body || 'You have a new notification',
+    icon: payload.notification?.icon || DEFAULT_ICON,
+    data: payload.data || {},
+    ...(payload.notification?.badge && { badge: DEFAULT_BADGE }),
+    vibrate: [200, 100, 200], // Add vibration pattern
+  };
 
-    // Broadcast to clients
-    self.clients.matchAll({ type: 'window' }).then((clients) => {
+  // Show notification
+  self.registration
+    .showNotification(notificationTitle, notificationOptions)
+    .then(() => console.log('[SW] Notification shown successfully'))
+    .catch((err) => console.error('[SW] Notification failed:', err));
+
+  // Broadcast to all clients
+  self.clients
+    .matchAll({ type: 'window', includeUncontrolled: true })
+    .then((clients) => {
       clients.forEach((client) => {
         client.postMessage({
           type: 'FCM_MESSAGE',
@@ -45,19 +55,22 @@ messaging.onBackgroundMessage((payload) => {
         });
       });
     });
-  } catch (error) {
-    console.error('[SW] Notification failed, showing fallback');
-    self.registration.showNotification('New message', {
-      body: 'Open the app to view',
-    });
-  }
 });
 
-// Optional: Cache badge on install
+// Cache important assets during install
 self.addEventListener('install', (event) => {
-  const cacheBadge = async () => {
-    const cache = await caches.open('notifications');
-    await cache.add(DEFAULT_BADGE).catch(() => {});
-  };
-  event.waitUntil(cacheBadge());
+  event.waitUntil(
+    caches.open('fcm-assets').then((cache) => {
+      return cache.addAll([DEFAULT_ICON, DEFAULT_BADGE]).catch((err) => {
+        console.log('[SW] Cache addAll error:', err);
+      });
+    })
+  );
+  self.skipWaiting(); // Force activate new SW immediately
+});
+
+// Optional: Claim clients to ensure immediate control
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+  console.log('[SW] Service Worker activated');
 });

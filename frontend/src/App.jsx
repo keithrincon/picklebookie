@@ -1,25 +1,24 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { FirebaseProvider } from './context/FirebaseContext';
 import { Routes, Route } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
 
+// Firebase imports
+import {
+  getMessaging,
+  getToken,
+  onMessage,
+  isSupported,
+} from 'firebase/messaging';
+import { app } from '../firebase/firebase'; // Adjust path as needed
+
+// Components
 import Navbar from './components/shared/Navbar';
-import NotificationComponent from './components/notifications/NotificationComponent';
 import Footer from './components/shared/Footer';
 import ErrorBoundary from './components/shared/ErrorBoundary';
-
-// Environment check - remove after verification
-console.log('Firebase Config:', {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY?.substring(0, 10) + '...',
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-});
-console.log(
-  'Maps API Key:',
-  process.env.REACT_APP_GOOGLE_MAPS_API_KEY?.substring(0, 10) + '...'
-);
 
 // Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
@@ -30,27 +29,67 @@ const LogIn = React.lazy(() => import('./components/auth/LogIn'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 function App() {
+  useEffect(() => {
+    const initializeFCM = async () => {
+      try {
+        // Check if FCM is supported in this browser
+        const isFcmSupported = await isSupported();
+        if (
+          !isFcmSupported ||
+          !process.env.REACT_APP_ENABLE_PUSH_NOTIFICATIONS
+        ) {
+          console.log('FCM not supported or disabled');
+          return;
+        }
+
+        const messaging = getMessaging(app);
+
+        // Only auto-request if enabled
+        if (process.env.REACT_APP_AUTO_REQUEST_NOTIFICATIONS === 'true') {
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') return;
+        }
+
+        // Get FCM token
+        const token = await getToken(messaging, {
+          vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
+        });
+
+        if (token) {
+          console.log('FCM Token:', token);
+          // TODO: Send token to your backend
+        }
+
+        // Handle foreground messages
+        onMessage(messaging, (payload) => {
+          console.log('Foreground message:', payload);
+          toast(payload.notification?.body || 'New notification', {
+            position: 'top-right',
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+        });
+      } catch (error) {
+        console.error('FCM Error:', error);
+      }
+    };
+
+    initializeFCM();
+  }, []);
+
   return (
     <AuthProvider>
       <FirebaseProvider>
         <div className='min-h-screen bg-off-white flex flex-col overflow-auto'>
           <Navbar />
-          <NotificationComponent />
 
           <main role='main' className='flex-1 p-4 mt-4'>
-            <a href='#main-content' className='sr-only focus:not-sr-only'>
-              Skip to content
-            </a>
-
             <div id='main-content' className='pb-8'>
               <ErrorBoundary>
-                <Suspense
-                  fallback={
-                    <div className='flex justify-center items-center h-64'>
-                      <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pickle-green'></div>
-                    </div>
-                  }
-                >
+                <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
                     <Route path='/' element={<Home />} />
                     <Route path='/signup' element={<SignUp />} />
@@ -83,5 +122,11 @@ function App() {
     </AuthProvider>
   );
 }
+
+const LoadingSpinner = () => (
+  <div className='flex justify-center items-center h-64'>
+    <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pickle-green'></div>
+  </div>
+);
 
 export default App;
