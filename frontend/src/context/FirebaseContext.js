@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { db, messaging, auth, storage, functions } from '../firebase/firebase'; // Import all Firebase services you need
+import { db, messaging, auth, storage, functions } from '../firebase/config'; // Import all Firebase services you need
 
 // Create a context for Firebase
 const FirebaseContext = createContext();

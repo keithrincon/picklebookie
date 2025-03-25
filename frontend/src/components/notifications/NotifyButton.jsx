@@ -1,5 +1,5 @@
 import React from 'react';
-import { sendNotification } from '../../firebase/firebase'; // Import the function
+import { sendNotification } from '../../firebase/config'; // Import the function
 
 function NotifyButton() {
   const handleClick = async () => {

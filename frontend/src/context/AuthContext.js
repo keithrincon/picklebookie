@@ -5,7 +5,7 @@ import {
   googleProvider,
   initConnectionMonitor,
   requestNotificationPermission,
-} from '../firebase/firebase';
+} from '../firebase/config';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,

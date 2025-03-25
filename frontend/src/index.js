@@ -10,7 +10,7 @@ import {
   app,
   requestNotificationPermission,
   messaging,
-} from './firebase/firebase'; // Fixed import path
+} from './firebase/config'; // Fixed import path
 
 // ========================
 // CRITICAL INITIALIZATION

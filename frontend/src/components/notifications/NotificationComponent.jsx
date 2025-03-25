@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { onMessageListener } from '../../firebase/firebase';
+import { onMessageListener } from '../../firebase/config';
 import { Toast, ToastContainer } from 'react-bootstrap';
 
 const NotificationComponent = () => {

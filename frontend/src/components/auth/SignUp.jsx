@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { requestNotificationPermission } from '../../firebase/firebase';
+import { requestNotificationPermission } from '../../firebase/config';
 import { Link, useNavigate } from 'react-router-dom';
 
 const SignUp = () => {

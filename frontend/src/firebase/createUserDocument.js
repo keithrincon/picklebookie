@@ -1,5 +1,5 @@
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { db } from './config';
 
 export const createUserDocument = async (user, additionalData = {}) => {
   if (!user || !user.uid) {
