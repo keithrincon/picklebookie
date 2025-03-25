@@ -1,6 +1,17 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import {
+  initializeAuth,
+  browserLocalPersistence,
+  GoogleAuthProvider,
+} from 'firebase/auth';
+import {
+  getFirestore,
+  enableIndexedDbPersistence,
+  doc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
@@ -16,8 +27,22 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+
+// Initialize Auth with persistence
+const auth = initializeAuth(app, {
+  persistence: browserLocalPersistence,
+});
+
+// Initialize Firestore with offline support
 const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.log('Offline persistence already enabled');
+  } else if (err.code === 'unimplemented') {
+    console.warn('Offline persistence not available in this browser');
+  }
+});
+
 const messaging = getMessaging(app);
 const storage = getStorage(app);
 const functions = getFunctions(app);
@@ -29,14 +54,18 @@ initializeAppCheck(app, {
   isTokenAutoRefreshEnabled: true,
 });
 
-// Notification Functions
+// Connection monitoring
+export const initConnectionMonitor = (callback) => {
+  const unsubscribe = onSnapshot(doc(db, '.info/connected'), (doc) => {
+    callback(doc.data()?.connected || false);
+  });
+  return unsubscribe;
+};
+
+// Notification Functions with offline fallback
 export const requestNotificationPermission = async () => {
   try {
-    if (!('Notification' in window)) {
-      console.warn('Notifications not supported');
-      return null;
-    }
-
+    if (!('Notification' in window)) return null;
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return null;
 
@@ -44,17 +73,9 @@ export const requestNotificationPermission = async () => {
       vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
     });
 
-    if (auth.currentUser?.uid) {
-      await setDoc(
-        doc(db, 'users', auth.currentUser.uid),
-        { fcmToken: token, updatedAt: new Date() },
-        { merge: true }
-      );
-    }
-
     return token;
   } catch (error) {
-    console.error('Notification permission error:', error);
+    console.error('Notification error:', error);
     return null;
   }
 };
