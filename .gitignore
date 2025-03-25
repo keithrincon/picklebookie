@@ -1,0 +1,44 @@
+# Firebase
+.firebase/
+firebase-debug.log
+deploy.log
+
+# Environment
+.env
+.env.*
+!.env.example  # This is the exception pattern
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+.next/
+
+# System
+.DS_Store
+*.log
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Testing
+coverage/
+.nyc_output/
+
+# Frontend specific
+.cache/
+
+# Firebase Secrets (CRITICAL)
+serviceAccountKey.json
+*-service-account.json
+firebase-admin-sdk.json
+*.key.json
+
+# Environment Files
+.env.local
+.env.development
+.env.production

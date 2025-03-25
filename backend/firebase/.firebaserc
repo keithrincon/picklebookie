@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "none": "picklebookie",
+    "default": "picklebookie"
+  },
+  "targets": {},
+  "etags": {}
+}
