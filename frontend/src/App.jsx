@@ -9,7 +9,17 @@ import './index.css';
 import Navbar from './components/shared/Navbar';
 import NotificationComponent from './components/notifications/NotificationComponent';
 import Footer from './components/shared/Footer';
-import ErrorBoundary from './components/shared/ErrorBoundary'; // Import ErrorBoundary
+import ErrorBoundary from './components/shared/ErrorBoundary';
+
+// Environment check - remove after verification
+console.log('Firebase Config:', {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY?.substring(0, 10) + '...',
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+});
+console.log(
+  'Maps API Key:',
+  process.env.REACT_APP_GOOGLE_MAPS_API_KEY?.substring(0, 10) + '...'
+);
 
 // Lazy load components
 const Home = React.lazy(() => import('./pages/Home'));
@@ -24,20 +34,14 @@ function App() {
     <AuthProvider>
       <FirebaseProvider>
         <div className='min-h-screen bg-off-white flex flex-col overflow-auto'>
-          {/* Navbar */}
           <Navbar />
-
-          {/* Notification Component */}
           <NotificationComponent />
 
-          {/* Main Content - Adjusted to have more appropriate spacing */}
           <main role='main' className='flex-1 p-4 mt-4'>
-            {/* Skip to Content Link */}
             <a href='#main-content' className='sr-only focus:not-sr-only'>
               Skip to content
             </a>
 
-            {/* Main Content Area */}
             <div id='main-content' className='pb-8'>
               <ErrorBoundary>
                 <Suspense
@@ -47,7 +51,6 @@ function App() {
                     </div>
                   }
                 >
-                  {/* Routes */}
                   <Routes>
                     <Route path='/' element={<Home />} />
                     <Route path='/signup' element={<SignUp />} />
@@ -61,10 +64,8 @@ function App() {
             </div>
           </main>
 
-          {/* Footer */}
           <Footer />
 
-          {/* Toast Container */}
           <ToastContainer
             position='top-right'
             autoClose={3000}

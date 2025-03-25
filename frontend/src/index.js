@@ -6,6 +6,11 @@ import { FirebaseProvider } from './context/FirebaseContext';
 import { PostsProvider } from './context/PostsContext';
 import { BrowserRouter as Router } from 'react-router-dom';
 import App from './App';
+import {
+  app,
+  requestNotificationPermission,
+  messaging,
+} from './firebase/firebase'; // Fixed import path
 
 // ========================
 // CRITICAL INITIALIZATION
@@ -54,16 +59,12 @@ if (
 
 // 3. Firebase Messaging Auto-Initialization (Optional)
 if (process.env.REACT_APP_ENABLE_PUSH_NOTIFICATIONS === 'true') {
-  import('./firebase')
-    .then(({ requestNotificationPermission }) => {
-      // Auto-request permissions if enabled
-      if (process.env.REACT_APP_AUTO_REQUEST_NOTIFICATIONS === 'true') {
-        requestNotificationPermission().then((token) => {
-          console.debug('FCM Token:', token || 'Not granted');
-        });
-      }
-    })
-    .catch((err) => console.error('Firebase import failed:', err));
+  // Directly use the imported function instead of dynamic import
+  if (process.env.REACT_APP_AUTO_REQUEST_NOTIFICATIONS === 'true') {
+    requestNotificationPermission().then((token) => {
+      console.debug('FCM Token:', token || 'Not granted');
+    });
+  }
 }
 
 // ========================
@@ -91,5 +92,8 @@ root.render(
 
 if (process.env.NODE_ENV === 'development') {
   console.log('Development mode enabled');
-  // Add any dev-specific monitoring here
+  // Verify Firebase initialization
+  console.log('Firebase app initialized:', app.name);
+  // Verify messaging
+  console.log('Firebase messaging initialized:', messaging);
 }

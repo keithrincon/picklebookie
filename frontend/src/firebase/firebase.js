@@ -8,15 +8,11 @@ import {
   getFirestore,
   enableIndexedDbPersistence,
   doc,
-  setDoc,
-  getDoc,
   onSnapshot,
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
-import { db } from '../firebase/firebase';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -25,6 +21,7 @@ const firebaseConfig = {
   storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
@@ -38,9 +35,11 @@ const auth = initializeAuth(app, {
 const db = getFirestore(app);
 enableIndexedDbPersistence(db).catch((err) => {
   if (err.code === 'failed-precondition') {
-    console.log('Offline persistence already enabled');
+    console.error(
+      'Multiple tabs open, persistence can only be enabled in one tab at a time'
+    );
   } else if (err.code === 'unimplemented') {
-    console.warn('Offline persistence not available in this browser');
+    console.error('The current browser does not support offline persistence');
   }
 });
 
@@ -49,22 +48,16 @@ const storage = getStorage(app);
 const functions = getFunctions(app);
 const googleProvider = new GoogleAuthProvider();
 
-// App Check Initialization
-initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_SITE_KEY),
-  isTokenAutoRefreshEnabled: true,
-});
-
 // Connection monitoring
-export const initConnectionMonitor = (callback) => {
+const initConnectionMonitor = (callback) => {
   const unsubscribe = onSnapshot(doc(db, '.info/connected'), (doc) => {
     callback(doc.data()?.connected || false);
   });
   return unsubscribe;
 };
 
-// Notification Functions with offline fallback
-export const requestNotificationPermission = async () => {
+// Notification functions
+const requestNotificationPermission = async () => {
   try {
     if (!('Notification' in window)) return null;
     const permission = await Notification.requestPermission();
@@ -73,7 +66,6 @@ export const requestNotificationPermission = async () => {
     const token = await getToken(messaging, {
       vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
     });
-
     return token;
   } catch (error) {
     console.error('Notification error:', error);
@@ -81,7 +73,7 @@ export const requestNotificationPermission = async () => {
   }
 };
 
-export const onMessageListener = () => {
+const onMessageListener = () => {
   return new Promise((resolve) => {
     onMessage(messaging, (payload) => {
       resolve(payload);
@@ -89,4 +81,15 @@ export const onMessageListener = () => {
   });
 };
 
-export { app, auth, googleProvider, db, messaging, storage, functions };
+export {
+  app,
+  auth,
+  db,
+  messaging,
+  storage,
+  functions,
+  googleProvider,
+  initConnectionMonitor,
+  requestNotificationPermission,
+  onMessageListener,
+};
