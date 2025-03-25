@@ -14,6 +14,7 @@ import {
 import { getStorage } from 'firebase/storage';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { signInWithPopup, signOut } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -140,6 +141,8 @@ export {
   storage,
   functions,
   googleProvider,
+  signInWithPopup,
+  signOut,
   initConnectionMonitor,
   requestNotificationPermission,
   onMessageListener,
