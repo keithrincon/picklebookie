@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { requestNotificationPermission } from '../../firebase/firebase';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const LogIn = () => {
   const [email, setEmail] = useState('');
@@ -24,14 +24,10 @@ const LogIn = () => {
 
     try {
       await logIn(email, password);
-      setEmail('');
-      setPassword('');
       navigate('/');
 
       const token = await requestNotificationPermission();
-      if (token) {
-        console.log('FCM token saved:', token);
-      }
+      if (token) console.log('FCM token saved:', token);
     } catch (error) {
       setError('Failed to log in. Check your credentials and try again.');
       console.error(error);
@@ -43,14 +39,19 @@ const LogIn = () => {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      await logInWithGoogle();
+      console.log('Initiating Google sign-in...');
+      const result = await logInWithGoogle();
+      console.log('Google sign-in result:', result);
       navigate('/');
 
       const token = await requestNotificationPermission();
-      if (token) {
-        console.log('FCM token saved:', token);
-      }
+      if (token) console.log('FCM token saved:', token);
     } catch (error) {
+      console.error('Google sign-in error:', {
+        code: error.code,
+        message: error.message,
+        fullError: error,
+      });
       setError(error.message);
     } finally {
       setIsLoading(false);
@@ -74,20 +75,82 @@ const LogIn = () => {
           disabled={isLoading}
           className='w-full flex items-center justify-center gap-2 bg-white text-dark-gray py-2 px-4 rounded-md border border-light-gray hover:bg-off-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-medium-gray mb-6 transition duration-150'
         >
-          <svg
-            xmlns='http://www.w3.org/2000/svg'
-            viewBox='0 0 48 48'
-            width='24px'
-            height='24px'
-          >
-            {/* Google logo SVG */}
-          </svg>
+          {/* Google SVG icon */}
           {isLoading ? 'Logging in...' : 'Continue with Google'}
         </button>
 
+        <div className='relative flex items-center justify-center mb-6'>
+          <div className='border-t border-light-gray flex-grow'></div>
+          <span className='px-4 text-sm text-medium-gray bg-white'>
+            or log in with email
+          </span>
+          <div className='border-t border-light-gray flex-grow'></div>
+        </div>
+
         <form onSubmit={handleSubmit} className='space-y-4'>
-          {/* Form fields */}
+          <div>
+            <label
+              htmlFor='email'
+              className='block text-sm font-medium text-dark-gray'
+            >
+              Email
+            </label>
+            <input
+              type='email'
+              id='email'
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className='mt-1 block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green'
+              required
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor='password'
+              className='block text-sm font-medium text-dark-gray'
+            >
+              Password
+            </label>
+            <input
+              type='password'
+              id='password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className='mt-1 block w-full px-3 py-2 border border-light-gray rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pickle-green focus:border-pickle-green'
+              required
+            />
+          </div>
+
+          <div className='flex justify-end'>
+            <Link
+              to='/forgot-password'
+              className='text-sm text-pickle-green hover:text-pickle-green-dark hover:underline transition duration-150'
+            >
+              Forgot password?
+            </Link>
+          </div>
+
+          <div className='pt-2'>
+            <button
+              type='submit'
+              disabled={isLoading}
+              className='w-full bg-pickle-green text-white py-2 px-4 rounded-md hover:bg-pickle-green-dark focus:outline-none focus:ring-2 focus:ring-pickle-green focus:ring-offset-2 flex items-center justify-center transition duration-150'
+            >
+              {isLoading ? 'Logging In...' : 'Log In'}
+            </button>
+          </div>
         </form>
+
+        <p className='mt-6 text-center text-sm text-medium-gray'>
+          Don't have an account?{' '}
+          <Link
+            to='/signup'
+            className='text-pickle-green hover:text-pickle-green-dark hover:underline font-medium transition duration-150'
+          >
+            Sign up
+          </Link>
+        </p>
       </div>
     </div>
   );
