@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-    "baseUrl": "src",
+    "baseUrl": ".",
     "paths": {
-      "@firebase/*": ["firebase/*"]
+      "@firebase/*": ["./src/firebase/*"]
     }
-  },
-  "exclude": ["node_modules"]
+  }
 }
