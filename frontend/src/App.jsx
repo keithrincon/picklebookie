@@ -13,7 +13,7 @@ import {
   onMessage,
   isSupported,
 } from 'firebase/messaging';
-import { app } from '../firebase/firebase'; // Adjust path as needed
+import { app } from '../firebase/config'; // Adjust path as needed
 
 // Components
 import Navbar from './components/shared/Navbar';
