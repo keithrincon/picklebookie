@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public read access to approved content
+    match /public/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // User-specific data
+    match /users/{userId} {
+      allow read: if true; // Public profiles
+      allow write: if request.auth.uid == userId;
+    }
+  }
+}
