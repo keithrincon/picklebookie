@@ -3,6 +3,8 @@ import {
   initializeAuth,
   browserLocalPersistence,
   GoogleAuthProvider,
+  browserPopupRedirectResolver,
+  setLogLevel,
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -13,6 +15,11 @@ import {
 import { getStorage } from 'firebase/storage';
 import { getMessaging, getToken } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
+
+// Enable debug logging in development
+if (process.env.NODE_ENV === 'development') {
+  setLogLevel('debug');
+}
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -27,18 +34,25 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize services
+// Initialize Auth with persistence and popup resolver
 const auth = initializeAuth(app, {
   persistence: browserLocalPersistence,
+  popupRedirectResolver: browserPopupRedirectResolver,
 });
 
+// Initialize other services
 const db = getFirestore(app);
 const storage = getStorage(app);
 const messaging = getMessaging(app);
 const functions = getFunctions(app, 'us-central1');
 
-// Initialize Google Auth Provider
+// Configure Google Provider
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+  login_hint: '',
+  hd: '',
+});
 
 // Enable Firestore offline persistence
 enableIndexedDbPersistence(db).catch((err) => {

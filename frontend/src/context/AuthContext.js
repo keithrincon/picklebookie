@@ -16,7 +16,7 @@ import {
   deleteUser,
   reauthenticateWithPopup,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'; // Added deleteDoc here
+import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
@@ -45,7 +45,6 @@ export const AuthProvider = ({ children }) => {
 
       if (!userSnapshot.exists()) {
         await setDoc(userRef, userData);
-        console.log('User document created successfully');
       }
 
       if (additionalData.fcmToken) {
@@ -57,15 +56,7 @@ export const AuthProvider = ({ children }) => {
 
       return userRef;
     } catch (error) {
-      console.error('Error with user document:', error);
-      if (error.code === 'unavailable') {
-        await setDoc(doc(db, '_offline', `user-${Date.now()}`), {
-          type: 'userUpdate',
-          userId: user.uid,
-          data: userData,
-          timestamp: new Date(),
-        });
-      }
+      console.error('Error creating user document:', error);
       return null;
     }
   };
@@ -117,12 +108,39 @@ export const AuthProvider = ({ children }) => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+
+      if (!user.email) {
+        throw new Error('Google sign-in failed - no email returned');
+      }
+
       const fcmToken = await requestNotificationPermission();
-      await createUserDocument(user, { fcmToken });
+      await createUserDocument(user, {
+        fcmToken,
+        name: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL || null,
+      });
+
       return user;
     } catch (error) {
-      console.error('Google login error:', error);
-      toast.error(error.message);
+      console.error('Google login error:', {
+        code: error.code,
+        message: error.message,
+        email: error.email,
+        credential: error.credential,
+      });
+
+      let friendlyMessage = 'Google sign-in failed';
+      if (error.code === 'auth/popup-closed-by-user') {
+        friendlyMessage = 'Sign-in canceled';
+      } else if (error.code === 'auth/network-request-failed') {
+        friendlyMessage = 'Network error - please check your connection';
+      } else if (
+        error.code === 'auth/account-exists-with-different-credential'
+      ) {
+        friendlyMessage = 'Account exists with different login method';
+      }
+
+      toast.error(friendlyMessage);
       throw error;
     }
   };
@@ -142,14 +160,14 @@ export const AuthProvider = ({ children }) => {
     try {
       if (!user) throw new Error('No user logged in');
 
-      // Reauthenticate if needed (example with Google)
+      // Reauthenticate
       const result = await signInWithPopup(auth, googleProvider);
       await reauthenticateWithPopup(result.user, googleProvider);
 
-      // Delete user document first
+      // Delete user document
       await deleteDoc(doc(db, 'users', user.uid));
 
-      // Then delete auth account
+      // Delete auth account
       await deleteUser(user);
 
       toast.success('Account deleted successfully');
@@ -161,10 +179,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    let unsubscribeAuth;
-    let unsubscribeConnection;
-
-    const handleAuthStateChange = async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       try {
         if (user) {
           const fcmToken = await requestNotificationPermission();
@@ -176,10 +191,9 @@ export const AuthProvider = ({ children }) => {
       } finally {
         setLoading(false);
       }
-    };
+    });
 
-    unsubscribeAuth = onAuthStateChanged(auth, handleAuthStateChange);
-    unsubscribeConnection = initConnectionMonitor(setIsOnline);
+    const unsubscribeConnection = initConnectionMonitor(setIsOnline);
 
     return () => {
       unsubscribeAuth();
