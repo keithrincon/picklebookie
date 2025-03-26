@@ -4,7 +4,7 @@ import {
   browserLocalPersistence,
   GoogleAuthProvider,
   browserPopupRedirectResolver,
-  setLogLevel,
+  // setLogLevel,
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -17,9 +17,9 @@ import { getMessaging, getToken } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
 
 // Enable debug logging in development
-if (process.env.NODE_ENV === 'development') {
-  setLogLevel('debug');
-}
+// if (process.env.NODE_ENV === 'development') {
+//   setLogLevel('debug');
+// }
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,

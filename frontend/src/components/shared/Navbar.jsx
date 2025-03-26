@@ -27,12 +27,19 @@ const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        (!mobileMenuRef.current ||
+          !mobileMenuRef.current.contains(event.target))
+      ) {
         setIsDropdownOpen(false);
+        setMobileMenuOpen(false);
       }
     };
 
@@ -58,14 +65,11 @@ const Navbar = () => {
   }, [mobileMenuOpen]);
 
   const handleLogout = async () => {
-    const confirmLogout = window.confirm('Are you sure you want to log out?');
-    if (confirmLogout) {
-      try {
-        await logOut();
-        navigate('/');
-      } catch (error) {
-        console.error('Error logging out:', error);
-      }
+    try {
+      await logOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
     }
   };
 
@@ -81,7 +85,7 @@ const Navbar = () => {
     <nav className='bg-pickle-green text-white shadow-md sticky top-0 z-50'>
       <div className='container mx-auto px-4'>
         <div className='flex justify-between items-center h-16'>
-          {/* Enhanced Logo with Icon */}
+          {/* Logo */}
           <Link
             to='/'
             className='flex items-center space-x-2 hover:opacity-90 transition-opacity'
@@ -177,7 +181,10 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Controls */}
-          <div className='flex md:hidden items-center space-x-2'>
+          <div
+            className='flex md:hidden items-center space-x-2'
+            ref={mobileMenuRef}
+          >
             {!user && (
               <div className='sm:flex hidden items-center space-x-2'>
                 <Link
@@ -243,7 +250,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Menu with Animation */}
+      {/* Mobile Menu */}
       <div
         className={`md:hidden bg-pickle-green-dark absolute w-full left-0 shadow-lg transform transition-transform duration-300 ease-in-out ${
           mobileMenuOpen

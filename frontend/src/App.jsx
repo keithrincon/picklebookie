@@ -18,6 +18,9 @@ const Matches = React.lazy(() => import('./pages/Matches'));
 const Profile = React.lazy(() => import('./pages/Profile'));
 const SignUp = React.lazy(() => import('./components/auth/SignUp'));
 const LogIn = React.lazy(() => import('./components/auth/LogIn'));
+const ForgotPassword = React.lazy(() =>
+  import('./components/auth/ForgotPassword')
+);
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -35,6 +38,7 @@ function App() {
                   <Route path='/' element={<Home />} />
                   <Route path='/signup' element={<SignUp />} />
                   <Route path='/login' element={<LogIn />} />
+                  <Route path='/forgot-password' element={<ForgotPassword />} />
                   <Route path='/matches/:matchId' element={<Matches />} />
                   <Route path='/profile/:userId' element={<Profile />} />
                   <Route path='*' element={<NotFound />} />
