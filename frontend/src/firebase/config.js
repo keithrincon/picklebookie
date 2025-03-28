@@ -4,22 +4,10 @@ import {
   browserLocalPersistence,
   GoogleAuthProvider,
   browserPopupRedirectResolver,
-  // setLogLevel,
 } from 'firebase/auth';
-import {
-  getFirestore,
-  enableIndexedDbPersistence,
-  doc,
-  onSnapshot,
-} from 'firebase/firestore';
+import { initializeFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getMessaging, getToken } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
-
-// Enable debug logging in development
-// if (process.env.NODE_ENV === 'development') {
-//   setLogLevel('debug');
-// }
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -40,10 +28,15 @@ const auth = initializeAuth(app, {
   popupRedirectResolver: browserPopupRedirectResolver,
 });
 
-// Initialize other services
-const db = getFirestore(app);
+// Initialize Firestore with improved cache settings (addresses the deprecation warning)
+const firestoreSettings = {
+  cache: {
+    subscribe: true, // Enable long-lived persistence
+  },
+};
+
+const db = initializeFirestore(app, firestoreSettings);
 const storage = getStorage(app);
-const messaging = getMessaging(app);
 const functions = getFunctions(app, 'us-central1');
 
 // Configure Google Provider
@@ -54,16 +47,7 @@ googleProvider.setCustomParameters({
   hd: '',
 });
 
-// Enable Firestore offline persistence
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Persistence already enabled in another tab');
-  } else if (err.code === 'unimplemented') {
-    console.warn('Browser does not support offline persistence');
-  }
-});
-
-// Connection Monitor - Modified to handle permissions gracefully
+// Connection Monitor
 const initConnectionMonitor = (callback) => {
   try {
     // Skip in development mode to avoid permission errors
@@ -83,26 +67,10 @@ const initConnectionMonitor = (callback) => {
   }
 };
 
-// Notification Permission - Modified to skip in development mode
+// Create a dummy FCM function that does nothing
 const requestNotificationPermission = async () => {
-  // Skip FCM in development mode
-  if (process.env.NODE_ENV === 'development') {
-    console.log('FCM disabled in development mode');
-    return null;
-  }
-
-  try {
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return null;
-
-    const token = await getToken(messaging, {
-      vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
-    });
-    return token;
-  } catch (error) {
-    console.error('Notification error:', error);
-    return null;
-  }
+  console.log('Notifications are currently disabled');
+  return null;
 };
 
 export {
@@ -110,7 +78,6 @@ export {
   auth,
   db,
   storage,
-  messaging,
   functions,
   googleProvider,
   initConnectionMonitor,
