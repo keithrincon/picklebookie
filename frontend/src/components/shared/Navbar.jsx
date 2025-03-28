@@ -229,7 +229,6 @@ const Navbar = () => {
               aria-expanded={mobileMenuOpen}
               aria-label='Toggle mobile menu'
               type='button'
-              role='button'
             >
               <span className='sr-only'>Open main menu</span>
               {mobileMenuOpen ? (
