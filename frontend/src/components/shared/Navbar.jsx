@@ -93,7 +93,12 @@ const Navbar = () => {
     e.preventDefault(); // Prevent default
     e.stopPropagation(); // Stop propagation
     setMobileMenuOpen(!mobileMenuOpen);
-    console.log('Toggle mobile menu:', !mobileMenuOpen); // Debug log
+    // Force blur after a slight delay to ensure it works on mobile
+    setTimeout(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }, 100);
   };
 
   const handleLogoClick = (e) => {
@@ -224,12 +229,14 @@ const Navbar = () => {
             )}
             <button
               ref={hamburgerRef}
-              onClick={(e) => {
-                toggleMobileMenu(e);
-                // Remove focus after click to prevent the selected appearance
-                e.currentTarget.blur();
+              onClick={toggleMobileMenu}
+              className='inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-pickle-green-dark transition-colors focus:outline-none focus:ring-0 active:bg-pickle-green touch-manipulation'
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                WebkitAppearance: 'none',
+                outline: 'none',
+                userSelect: 'none',
               }}
-              className='inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-pickle-green-dark focus:outline-none touch-manipulation'
               aria-expanded={mobileMenuOpen}
               aria-label='Toggle mobile menu'
               type='button'
