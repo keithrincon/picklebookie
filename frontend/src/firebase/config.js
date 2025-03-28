@@ -70,8 +70,14 @@ const initConnectionMonitor = (callback) => {
   });
 };
 
-// Notification Permission
+// Notification Permission - Modified to skip in development mode
 const requestNotificationPermission = async () => {
+  // Skip FCM in development mode
+  if (process.env.NODE_ENV === 'development') {
+    console.log('FCM disabled in development mode');
+    return null;
+  }
+
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return null;

@@ -12,6 +12,12 @@ export default function useFirebase() {
   useEffect(() => {
     const initializeFCM = async () => {
       try {
+        // Skip FCM in development mode completely
+        if (process.env.NODE_ENV === 'development') {
+          console.log('FCM disabled in development mode');
+          return;
+        }
+
         const supported = await isSupported();
         if (!supported || !process.env.REACT_APP_ENABLE_PUSH_NOTIFICATIONS)
           return;
