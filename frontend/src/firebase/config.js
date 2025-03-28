@@ -28,7 +28,7 @@ const auth = initializeAuth(app, {
   popupRedirectResolver: browserPopupRedirectResolver,
 });
 
-// Initialize Firestore with improved cache settings (addresses the deprecation warning)
+// Initialize Firestore with improved cache settings
 const firestoreSettings = {
   cache: {
     subscribe: true, // Enable long-lived persistence
@@ -38,6 +38,14 @@ const firestoreSettings = {
 const db = initializeFirestore(app, firestoreSettings);
 const storage = getStorage(app);
 const functions = getFunctions(app, 'us-central1');
+
+// Mock messaging object with all potentially needed methods
+const messaging = {
+  getToken: async () => null,
+  onMessage: () => () => {},
+  deleteToken: async () => {},
+  isSupported: async () => false,
+};
 
 // Configure Google Provider
 const googleProvider = new GoogleAuthProvider();
@@ -73,6 +81,7 @@ const requestNotificationPermission = async () => {
   return null;
 };
 
+// Make sure all these are explicitly exported
 export {
   app,
   auth,
@@ -82,4 +91,5 @@ export {
   googleProvider,
   initConnectionMonitor,
   requestNotificationPermission,
+  messaging, // Explicitly export the mock messaging object
 };
