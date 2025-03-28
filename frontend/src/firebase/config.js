@@ -63,11 +63,24 @@ enableIndexedDbPersistence(db).catch((err) => {
   }
 });
 
-// Connection Monitor
+// Connection Monitor - Modified to handle permissions gracefully
 const initConnectionMonitor = (callback) => {
-  return onSnapshot(doc(db, '.info/connected'), (doc) => {
-    callback(doc.data()?.connected || false);
-  });
+  try {
+    // Skip in development mode to avoid permission errors
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Connection monitor disabled in development mode');
+      callback(true); // Assume always connected in development
+      return () => {}; // Return empty unsubscribe function
+    }
+
+    return onSnapshot(doc(db, '.info/connected'), (doc) => {
+      callback(doc.data()?.connected || false);
+    });
+  } catch (error) {
+    console.warn('Connection monitor error:', error);
+    callback(true); // Fallback to assume connected
+    return () => {}; // Return empty unsubscribe function
+  }
 };
 
 // Notification Permission - Modified to skip in development mode
