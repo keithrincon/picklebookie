@@ -224,7 +224,11 @@ const Navbar = () => {
             )}
             <button
               ref={hamburgerRef}
-              onClick={toggleMobileMenu}
+              onClick={(e) => {
+                toggleMobileMenu(e);
+                // Remove focus after click to prevent the selected appearance
+                e.currentTarget.blur();
+              }}
               className='inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-pickle-green-dark focus:outline-none touch-manipulation'
               aria-expanded={mobileMenuOpen}
               aria-label='Toggle mobile menu'
