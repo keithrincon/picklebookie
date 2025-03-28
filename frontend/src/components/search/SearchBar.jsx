@@ -10,7 +10,7 @@ const SearchBar = ({ id }) => {
   const [error, setError] = useState(null);
   const searchRef = useRef(null);
   const debounceTimerRef = useRef(null);
-  const prevResultsRef = useRef([]);
+  const prevSearchTermRef = useRef('');
   const location = useLocation(); // Track route changes
 
   // Initialize Firebase Functions
@@ -64,33 +64,30 @@ const SearchBar = ({ id }) => {
     [searchUsersFunction]
   );
 
-  // Handle search term changes
+  // Handle search term changes - fixed to prevent infinite loop
   useEffect(() => {
+    // Skip effect if search term hasn't changed
+    if (prevSearchTermRef.current === searchTerm) {
+      return;
+    }
+
+    prevSearchTermRef.current = searchTerm;
+
     const handleSearch = async () => {
       if (searchTerm.length < 2) {
-        setTimeout(() => {
-          if (searchTerm.length < 2) {
-            setShowResults(false);
-            setResults([]);
-            setError(null);
-          }
-        }, 100);
+        setShowResults(false);
+        setResults([]);
+        setError(null);
         return;
       }
 
-      if (prevResultsRef.current.length === 0) {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
 
       try {
         const searchResults = await debouncedSearch(searchTerm);
-
-        if (searchTerm.length >= 2) {
-          prevResultsRef.current = searchResults;
-          setResults(searchResults);
-          setShowResults(true);
-          setError(null);
-        }
+        setResults(searchResults);
+        setShowResults(true);
+        setError(null);
       } catch (error) {
         setError(`Search failed: ${error.message}`);
       } finally {

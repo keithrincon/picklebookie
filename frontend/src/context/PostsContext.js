@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useCallback,
+  useRef,
 } from 'react';
 import { db } from '../firebase/config';
 import {
@@ -27,7 +28,10 @@ export const PostsProvider = ({ children }) => {
   const [locationRequested, setLocationRequested] = useState(false);
   const { user } = useAuth();
 
-  // Calculate distance between two coordinates - memoized for performance
+  // Flag to track if location update has been processed
+  const locationUpdateProcessed = useRef(false);
+
+  // Calculate distance between two coordinates (memoized)
   const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
     if (!lat1 || !lat2) return null;
     const R = 6371; // Earth's radius in km
@@ -43,42 +47,11 @@ export const PostsProvider = ({ children }) => {
     return R * c * 0.621371; // Convert to miles
   }, []);
 
-  // Request location access explicitly (call this method on a button click)
-  const requestLocationAccess = useCallback(() => {
-    setLocationRequested(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.log('Location access denied or error:', error.message);
-          setUserLocation(null);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
-      );
-    } else {
-      console.log('Geolocation not supported by this browser');
-    }
-  }, []);
-
-  // Only request location after user interaction or mount if previously allowed
-  useEffect(() => {
-    // Check if location was previously granted
-    const locationPreference = localStorage.getItem('locationPermission');
-
-    if (locationPreference === 'granted') {
-      requestLocationAccess();
-    }
-    // Don't automatically request location if not previously granted
-  }, [requestLocationAccess]);
-
-  // Process posts data with location information
+  // Process posts with location data (memoized)
   const processPostsWithLocation = useCallback(
     (postsData) => {
+      if (!userLocation) return postsData;
+
       return postsData.map((post) => {
         const distance =
           userLocation && post.latitude
@@ -100,7 +73,53 @@ export const PostsProvider = ({ children }) => {
     [userLocation, calculateDistance]
   );
 
-  // Fetch posts with better error handling
+  // Request location access explicitly
+  const requestLocationAccess = useCallback(() => {
+    setLocationRequested(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          localStorage.setItem('locationPermission', 'granted');
+        },
+        (error) => {
+          console.log('Location access denied or error:', error.message);
+          setUserLocation(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
+      );
+    } else {
+      console.log('Geolocation not supported by this browser');
+    }
+  }, []);
+
+  // Check for previously granted location permission
+  useEffect(() => {
+    const locationPreference = localStorage.getItem('locationPermission');
+    if (locationPreference === 'granted') {
+      const timer = setTimeout(() => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setUserLocation({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              });
+            },
+            (error) => {
+              console.log('Location error:', error.message);
+            }
+          );
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Fetch posts from Firestore
   useEffect(() => {
     if (!user) {
       setPosts([]);
@@ -112,7 +131,6 @@ export const PostsProvider = ({ children }) => {
     setError(null);
 
     try {
-      // Query posts that are current or in the future
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -132,10 +150,7 @@ export const PostsProvider = ({ children }) => {
               createdAt: doc.data().createdAt?.toDate() || new Date(),
             }));
 
-            // Apply location processing
             const processedPosts = processPostsWithLocation(postsList);
-
-            // Sort: nearby posts first, then by date
             const sortedPosts = [...processedPosts].sort((a, b) => {
               if (a.isNearby && !b.isNearby) return -1;
               if (!a.isNearby && b.isNearby) return 1;
@@ -144,6 +159,7 @@ export const PostsProvider = ({ children }) => {
 
             setPosts(sortedPosts);
             setLoading(false);
+            locationUpdateProcessed.current = false;
           } catch (err) {
             console.error('Error processing posts data:', err);
             setError('Error processing posts data');
@@ -162,19 +178,29 @@ export const PostsProvider = ({ children }) => {
       console.error('Posts context setup error:', err);
       setError('Error setting up posts listener');
       setLoading(false);
-      return () => {}; // Return empty cleanup function
+      return () => {};
     }
   }, [user, processPostsWithLocation]);
 
-  // Update posts when location changes
+  // Handle location changes (now with proper dependencies)
   useEffect(() => {
-    if (posts.length > 0 && userLocation) {
+    if (userLocation && posts.length > 0 && !locationUpdateProcessed.current) {
+      locationUpdateProcessed.current = true;
       const updatedPosts = processPostsWithLocation(posts);
-      setPosts(updatedPosts);
-    }
-  }, [userLocation, processPostsWithLocation, posts]);
 
-  // Save location preference when it's granted
+      const hasChanges = updatedPosts.some(
+        (post, index) =>
+          post.distance !== posts[index].distance ||
+          post.isNearby !== posts[index].isNearby
+      );
+
+      if (hasChanges) {
+        setPosts(updatedPosts);
+      }
+    }
+  }, [userLocation, posts, processPostsWithLocation]);
+
+  // Save location preference
   useEffect(() => {
     if (userLocation && locationRequested) {
       localStorage.setItem('locationPermission', 'granted');
@@ -189,7 +215,7 @@ export const PostsProvider = ({ children }) => {
         error,
         userLocation,
         locationEnabled: !!userLocation,
-        requestLocationAccess, // Expose this method for user interaction
+        requestLocationAccess,
       }}
     >
       {children}

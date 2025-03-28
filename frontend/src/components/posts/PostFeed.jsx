@@ -5,6 +5,18 @@ import { Link } from 'react-router-dom';
 const PostCard = ({ post, isExpanded, onToggleExpand }) => {
   const formatDate = (dateString) => {
     const options = { weekday: 'short', month: 'short', day: 'numeric' };
+
+    // Correctly parse YYYY-MM-DD date strings in local timezone
+    if (dateString && dateString.includes('-')) {
+      const [year, month, day] = dateString
+        .split('-')
+        .map((num) => parseInt(num));
+      // Create date in local timezone (month is 0-indexed in JS)
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString('en-US', options);
+    }
+
+    // Fallback to original method for other date formats
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
@@ -147,9 +159,27 @@ const PostFeed = () => {
         });
       case 'soonest':
         return postsToSort.sort((a, b) => {
-          // First by date
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
+          // Parse dates correctly for comparison
+          let dateA, dateB;
+
+          // Safely parse dates in local timezone
+          if (a.date && a.date.includes('-')) {
+            const [yearA, monthA, dayA] = a.date
+              .split('-')
+              .map((num) => parseInt(num));
+            dateA = new Date(yearA, monthA - 1, dayA);
+          } else {
+            dateA = new Date(a.date);
+          }
+
+          if (b.date && b.date.includes('-')) {
+            const [yearB, monthB, dayB] = b.date
+              .split('-')
+              .map((num) => parseInt(num));
+            dateB = new Date(yearB, monthB - 1, dayB);
+          } else {
+            dateB = new Date(b.date);
+          }
 
           if (dateA.getTime() !== dateB.getTime()) {
             return dateA - dateB;
