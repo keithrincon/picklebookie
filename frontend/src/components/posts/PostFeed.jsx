@@ -78,6 +78,8 @@ const PostCard = ({ post, isExpanded, onToggleExpand }) => {
       <button
         onClick={onToggleExpand}
         className='mt-3 text-sm text-pickle-green hover:underline'
+        aria-expanded={isExpanded}
+        aria-label={isExpanded ? 'Show less details' : 'Show more details'}
       >
         {isExpanded ? 'Show less' : 'Show more'}
       </button>
@@ -96,6 +98,21 @@ const EmptyState = ({ userLocation }) => (
 const LoadingSpinner = () => (
   <div className='flex justify-center items-center h-64'>
     <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pickle-green'></div>
+  </div>
+);
+
+const LocationPrompt = ({ onRequestLocation }) => (
+  <div className='bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded-lg mb-4'>
+    <p className='font-medium'>Enable location to see nearby games</p>
+    <p className='text-sm mb-2'>
+      See distances to games and get better recommendations.
+    </p>
+    <button
+      onClick={onRequestLocation}
+      className='bg-pickle-green text-white px-4 py-2 rounded hover:bg-green-600 transition-colors'
+    >
+      Enable Location
+    </button>
   </div>
 );
 
@@ -120,9 +137,36 @@ const PostFeed = () => {
 
     switch (sortBy) {
       case 'newest':
-        return postsToSort.sort((a, b) => b.createdAt - a.createdAt);
+        return postsToSort.sort((a, b) => {
+          // Make sure we're comparing date objects
+          const dateA =
+            a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+          const dateB =
+            b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+          return dateB - dateA;
+        });
       case 'soonest':
-        return postsToSort.sort((a, b) => new Date(a.date) - new Date(b.date));
+        return postsToSort.sort((a, b) => {
+          // First by date
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+
+          if (dateA.getTime() !== dateB.getTime()) {
+            return dateA - dateB;
+          }
+
+          // If same date, sort by start time
+          const getTimeValue = (time) => {
+            const [timePart, period] = time.split(' ');
+            const [hour, minute] = timePart.split(':');
+            let hourVal = parseInt(hour);
+            if (period === 'PM' && hourVal !== 12) hourVal += 12;
+            if (period === 'AM' && hourVal === 12) hourVal = 0;
+            return hourVal * 60 + parseInt(minute);
+          };
+
+          return getTimeValue(a.startTime) - getTimeValue(b.startTime);
+        });
       case 'closest':
         return postsToSort.sort((a, b) => {
           if (a.distance === null) return 1;
@@ -152,6 +196,10 @@ const PostFeed = () => {
 
   return (
     <div className='space-y-4'>
+      {!userLocation && (
+        <LocationPrompt onRequestLocation={requestLocationAccess} />
+      )}
+
       {posts.length > 0 ? (
         <>
           <div className='flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2'>
@@ -159,15 +207,7 @@ const PostFeed = () => {
               {userLocation ? (
                 <span>Showing {nearbyPostsCount} nearby games</span>
               ) : (
-                <>
-                  <span>Showing all games</span>
-                  <button
-                    onClick={requestLocationAccess}
-                    className='text-pickle-green underline hover:text-green-700'
-                  >
-                    Enable location
-                  </button>
-                </>
+                <span>Showing all games</span>
               )}
             </div>
             <div className='flex items-center'>
@@ -179,6 +219,7 @@ const PostFeed = () => {
                 className='text-sm border border-light-gray rounded p-1 focus:outline-none focus:ring-1 focus:ring-pickle-green'
                 onChange={handleSortChange}
                 value={sortBy}
+                aria-label='Sort games by'
               >
                 <option value='soonest'>Soonest</option>
                 <option value='newest'>Newest</option>

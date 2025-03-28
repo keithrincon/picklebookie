@@ -43,6 +43,7 @@ const CreatePost = () => {
       'Redding Pickleball Courts',
       'Caldwell Park, Redding',
       'Big League Dreams, Redding',
+      'Shasta Lake, CA',
     ],
     []
   );
@@ -51,15 +52,6 @@ const CreatePost = () => {
   const getTodayLocalDate = useCallback(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
-  }, []);
-
-  // Compute min/max date constraints
-  const minDate = useMemo(() => getTodayLocalDate(), [getTodayLocalDate]);
-
-  const maxDate = useMemo(() => {
-    const date = new Date();
-    date.setMonth(date.getMonth() + 3);
-    return date.toISOString().split('T')[0];
   }, []);
 
   const handleChange = useCallback((e) => {
@@ -76,34 +68,69 @@ const CreatePost = () => {
       return false;
     }
 
-    if (date < minDate) {
+    // Check if date is in the past (before today)
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+
+    if (selectedDate < today) {
       setError('Please select today or a future date.');
       return false;
     }
 
-    if (date > maxDate) {
-      setError('You can only create posts up to 3 months in advance.');
-      return false;
+    // For today's date, check if the time is in the past
+    if (selectedDate.getTime() === today.getTime()) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+
+      const startTimeHour =
+        parseInt(formData.startHour) +
+        (formData.startPeriod === 'PM' && formData.startHour !== '12'
+          ? 12
+          : 0) -
+        (formData.startPeriod === 'AM' && formData.startHour === '12' ? 12 : 0);
+
+      // If start time is earlier than current time
+      if (
+        startTimeHour < currentHour ||
+        (startTimeHour === currentHour &&
+          parseInt(formData.startMinute) < currentMinute)
+      ) {
+        setError("Start time must be in the future for today's date.");
+        return false;
+      }
     }
 
     // Validate time format (start time should be before end time on same day)
-    const startTimeValue =
+    const startTimeHour =
       parseInt(formData.startHour) +
       (formData.startPeriod === 'PM' && formData.startHour !== '12' ? 12 : 0) -
       (formData.startPeriod === 'AM' && formData.startHour === '12' ? 12 : 0);
 
-    const endTimeValue =
+    const endTimeHour =
       parseInt(formData.endHour) +
       (formData.endPeriod === 'PM' && formData.endHour !== '12' ? 12 : 0) -
       (formData.endPeriod === 'AM' && formData.endHour === '12' ? 12 : 0);
 
-    if (startTimeValue > endTimeValue) {
+    if (
+      startTimeHour > endTimeHour ||
+      (startTimeHour === endTimeHour &&
+        parseInt(formData.startMinute) >= parseInt(formData.endMinute))
+    ) {
       setError('End time must be after start time.');
       return false;
     }
 
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 3);
+    if (selectedDate > maxDate) {
+      setError('You can only create posts up to 3 months in advance.');
+      return false;
+    }
+
     return true;
-  }, [formData, minDate, maxDate]);
+  }, [formData]);
 
   const resetForm = useCallback(() => {
     setFormData({
@@ -175,6 +202,7 @@ const CreatePost = () => {
           onChange={handleChange}
           className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
           required={required}
+          aria-label={`${label} hour`}
         >
           <option value='' disabled>
             Hour
@@ -191,6 +219,7 @@ const CreatePost = () => {
           value={formData[`${prefix}Minute`]}
           onChange={handleChange}
           className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+          aria-label={`${label} minute`}
         >
           {minutes.map((minute) => (
             <option key={`${prefix}-min-${minute}`} value={minute}>
@@ -204,6 +233,7 @@ const CreatePost = () => {
           value={formData[`${prefix}Period`]}
           onChange={handleChange}
           className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+          aria-label={`${label} AM/PM`}
         >
           <option value='AM'>AM</option>
           <option value='PM'>PM</option>
@@ -235,8 +265,7 @@ const CreatePost = () => {
             name='date'
             value={formData.date}
             onChange={handleChange}
-            min={minDate}
-            max={maxDate}
+            min={getTodayLocalDate()}
             className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             required
           />
@@ -268,6 +297,10 @@ const CreatePost = () => {
               <option key={loc} value={loc} />
             ))}
           </datalist>
+          <p className='text-xs text-gray-500 mt-1'>
+            Enter a specific address or location name for accurate distance
+            calculations
+          </p>
         </div>
 
         {/* Game Type */}
