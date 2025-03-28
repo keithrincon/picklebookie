@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { db } from '../../firebase/config';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
@@ -24,31 +24,51 @@ const CreatePost = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
-  // Time options for selects
-  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-  const minutes = Array.from({ length: 12 }, (_, i) => i * 5).map((m) =>
-    m.toString().padStart(2, '0')
-  );
-  const gameTypes = ['Practice', 'Singles', 'Doubles'];
-  const locationSuggestions = [
-    'Enterprise Park, Redding',
-    'Redding Pickleball Courts',
-    'Caldwell Park, Redding',
-    'Big League Dreams, Redding',
-  ];
+  // Memoize constant values
+  const hours = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), []);
 
-  const getTodayLocalDate = () => {
+  const minutes = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) => i * 5).map((m) =>
+        m.toString().padStart(2, '0')
+      ),
+    []
+  );
+
+  const gameTypes = useMemo(() => ['Practice', 'Singles', 'Doubles'], []);
+
+  const locationSuggestions = useMemo(
+    () => [
+      'Enterprise Park, Redding',
+      'Redding Pickleball Courts',
+      'Caldwell Park, Redding',
+      'Big League Dreams, Redding',
+    ],
+    []
+  );
+
+  // Get today's date in YYYY-MM-DD format
+  const getTodayLocalDate = useCallback(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
-  };
+  }, []);
 
-  const handleChange = (e) => {
+  // Compute min/max date constraints
+  const minDate = useMemo(() => getTodayLocalDate(), [getTodayLocalDate]);
+
+  const maxDate = useMemo(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 3);
+    return date.toISOString().split('T')[0];
+  }, []);
+
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setError('');
-  };
+  }, []);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const { startHour, endHour, date, location, type } = formData;
 
     if (!startHour || !endHour || !date || !location || !type) {
@@ -56,22 +76,49 @@ const CreatePost = () => {
       return false;
     }
 
-    const todayStr = getTodayLocalDate();
-    if (date < todayStr) {
+    if (date < minDate) {
       setError('Please select today or a future date.');
       return false;
     }
 
-    const maxDate = new Date();
-    maxDate.setMonth(maxDate.getMonth() + 3);
-    const maxDateStr = maxDate.toISOString().split('T')[0];
-    if (date > maxDateStr) {
+    if (date > maxDate) {
       setError('You can only create posts up to 3 months in advance.');
       return false;
     }
 
+    // Validate time format (start time should be before end time on same day)
+    const startTimeValue =
+      parseInt(formData.startHour) +
+      (formData.startPeriod === 'PM' && formData.startHour !== '12' ? 12 : 0) -
+      (formData.startPeriod === 'AM' && formData.startHour === '12' ? 12 : 0);
+
+    const endTimeValue =
+      parseInt(formData.endHour) +
+      (formData.endPeriod === 'PM' && formData.endHour !== '12' ? 12 : 0) -
+      (formData.endPeriod === 'AM' && formData.endHour === '12' ? 12 : 0);
+
+    if (startTimeValue > endTimeValue) {
+      setError('End time must be after start time.');
+      return false;
+    }
+
     return true;
-  };
+  }, [formData, minDate, maxDate]);
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      startHour: '',
+      startMinute: '00',
+      startPeriod: 'AM',
+      endHour: '',
+      endMinute: '00',
+      endPeriod: 'AM',
+      date: '',
+      location: '',
+      type: 'Practice',
+      description: '',
+    });
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,9 +136,9 @@ const CreatePost = () => {
         startTime: `${formData.startHour}:${formData.startMinute} ${formData.startPeriod}`,
         endTime: `${formData.endHour}:${formData.endMinute} ${formData.endPeriod}`,
         date: formData.date,
-        location: geocodeResult.formattedAddress,
+        location: geocodeResult.formattedAddress || formData.location,
         type: formData.type,
-        description: formData.description,
+        description: formData.description.trim(),
         userId: user.uid,
         userName: user.displayName || user.email,
         createdAt: Timestamp.now(),
@@ -104,28 +151,66 @@ const CreatePost = () => {
       });
 
       // Reset form
-      setFormData({
-        startHour: '',
-        startMinute: '00',
-        startPeriod: 'AM',
-        endHour: '',
-        endMinute: '00',
-        endPeriod: 'AM',
-        date: '',
-        location: '',
-        type: 'Practice',
-        description: '',
-      });
-
+      resetForm();
       toast.success('Game created successfully!');
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error creating game:', error);
       setError('Failed to create game. Please try again.');
       toast.error('Failed to create game');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Custom time select component to reduce repetition
+  const TimeSelect = ({ prefix, label, required = false }) => (
+    <div>
+      <label className='block text-sm font-medium text-gray-700 mb-2'>
+        {label} {required && <span className='text-red-500'>*</span>}
+      </label>
+      <div className='flex space-x-2'>
+        <select
+          name={`${prefix}Hour`}
+          value={formData[`${prefix}Hour`]}
+          onChange={handleChange}
+          className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+          required={required}
+        >
+          <option value='' disabled>
+            Hour
+          </option>
+          {hours.map((hour) => (
+            <option key={`${prefix}-${hour}`} value={hour}>
+              {hour}
+            </option>
+          ))}
+        </select>
+
+        <select
+          name={`${prefix}Minute`}
+          value={formData[`${prefix}Minute`]}
+          onChange={handleChange}
+          className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+        >
+          {minutes.map((minute) => (
+            <option key={`${prefix}-min-${minute}`} value={minute}>
+              {minute}
+            </option>
+          ))}
+        </select>
+
+        <select
+          name={`${prefix}Period`}
+          value={formData[`${prefix}Period`]}
+          onChange={handleChange}
+          className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
+        >
+          <option value='AM'>AM</option>
+          <option value='PM'>PM</option>
+        </select>
+      </div>
+    </div>
+  );
 
   return (
     <div className='bg-white p-6 rounded-lg shadow-md'>
@@ -150,108 +235,17 @@ const CreatePost = () => {
             name='date'
             value={formData.date}
             onChange={handleChange}
-            min={getTodayLocalDate()}
+            min={minDate}
+            max={maxDate}
             className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
             required
           />
         </div>
 
-        {/* Time Selection - Start Time */}
+        {/* Time Selection using the reusable component */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Start Time <span className='text-red-500'>*</span>
-            </label>
-            <div className='flex space-x-2'>
-              <select
-                name='startHour'
-                value={formData.startHour}
-                onChange={handleChange}
-                className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
-                required
-              >
-                <option value='' disabled>
-                  Hour
-                </option>
-                {hours.map((hour) => (
-                  <option key={`start-${hour}`} value={hour}>
-                    {hour}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                name='startMinute'
-                value={formData.startMinute}
-                onChange={handleChange}
-                className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
-              >
-                {minutes.map((minute) => (
-                  <option key={`start-min-${minute}`} value={minute}>
-                    {minute}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                name='startPeriod'
-                value={formData.startPeriod}
-                onChange={handleChange}
-                className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
-              >
-                <option value='AM'>AM</option>
-                <option value='PM'>PM</option>
-              </select>
-            </div>
-          </div>
-
-          {/* End Time */}
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              End Time <span className='text-red-500'>*</span>
-            </label>
-            <div className='flex space-x-2'>
-              <select
-                name='endHour'
-                value={formData.endHour}
-                onChange={handleChange}
-                className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
-                required
-              >
-                <option value='' disabled>
-                  Hour
-                </option>
-                {hours.map((hour) => (
-                  <option key={`end-${hour}`} value={hour}>
-                    {hour}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                name='endMinute'
-                value={formData.endMinute}
-                onChange={handleChange}
-                className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
-              >
-                {minutes.map((minute) => (
-                  <option key={`end-min-${minute}`} value={minute}>
-                    {minute}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                name='endPeriod'
-                value={formData.endPeriod}
-                onChange={handleChange}
-                className='w-1/3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm'
-              >
-                <option value='AM'>AM</option>
-                <option value='PM'>PM</option>
-              </select>
-            </div>
-          </div>
+          <TimeSelect prefix='start' label='Start Time' required={true} />
+          <TimeSelect prefix='end' label='End Time' required={true} />
         </div>
 
         {/* Location */}
