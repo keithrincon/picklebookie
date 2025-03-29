@@ -11,6 +11,7 @@ import useFirebase from './hooks/useFirebase';
 import Navbar from './components/shared/Navbar';
 import Footer from './components/shared/Footer';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import FeedbackButton from './components/feedback/FeedbackButton'; // Add this import
 
 // Lazy-loaded components
 const Home = React.lazy(() => import('./pages/Home'));
@@ -22,6 +23,10 @@ const ForgotPassword = React.lazy(() =>
   import('./components/auth/ForgotPassword')
 );
 const NotFound = React.lazy(() => import('./pages/NotFound'));
+// Lazy load the admin component
+const FeedbackAdmin = React.lazy(() =>
+  import('./components/feedback/FeedbackAdmin')
+);
 
 function App() {
   useFirebase();
@@ -41,12 +46,16 @@ function App() {
                   <Route path='/forgot-password' element={<ForgotPassword />} />
                   <Route path='/matches/:matchId' element={<Matches />} />
                   <Route path='/profile/:userId' element={<Profile />} />
+                  {/* Add admin route for feedback */}
+                  <Route path='/admin/feedback' element={<FeedbackAdmin />} />
                   <Route path='*' element={<NotFound />} />
                 </Routes>
               </Suspense>
             </ErrorBoundary>
           </main>
           <Footer />
+          {/* Add the FeedbackButton component */}
+          <FeedbackButton />
           <ToastContainer position='top-right' autoClose={3000} />
         </div>
       </FirebaseProvider>

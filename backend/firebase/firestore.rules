@@ -19,5 +19,20 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && 
                              (resource.data.userId == request.auth.uid);
     }
+    
+    // Feedback collection
+    match /feedback/{feedbackId} {
+      // Anyone can create feedback (even anonymous users)
+      allow create: if true;
+      
+      // Only the creator or admin can read their feedback
+      allow read: if request.auth != null && 
+                 (resource.data.userId == request.auth.uid || 
+                  request.auth.uid == '29Q3uCEjBxO1CkLfWPWYJ2Si3Ch1');
+      
+      // Only admin can update or delete feedback
+      allow update, delete: if request.auth != null && 
+                            request.auth.uid == '29Q3uCEjBxO1CkLfWPWYJ2Si3Ch1';
+    }
   }
 }

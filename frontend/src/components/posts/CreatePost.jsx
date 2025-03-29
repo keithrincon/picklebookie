@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { db } from '../../firebase/config';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, GeoPoint } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { geocodeLocation } from '../../services/locationServices';
+import LocationAutocomplete from '../../components/location/LocationAutocomplete';
 
 const CreatePost = () => {
   // Form state
@@ -20,6 +21,9 @@ const CreatePost = () => {
     eventType: 'Regular Game', // Default event type
     description: '',
   });
+
+  // Store detailed location information from autocomplete
+  const [locationDetails, setLocationDetails] = useState(null);
 
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,17 +56,6 @@ const CreatePost = () => {
       { value: 'Club Night', label: '🌙 Club Night' },
       { value: 'Charity Event', label: '❤️ Charity Event' },
       { value: 'Training Camp', label: '🏕️ Training Camp' },
-    ],
-    []
-  );
-
-  const locationSuggestions = useMemo(
-    () => [
-      'Enterprise Park, Redding',
-      'Redding Pickleball Courts',
-      'Caldwell Park, Redding',
-      'Big League Dreams, Redding',
-      'Shasta Lake, CA',
     ],
     []
   );
@@ -200,6 +193,7 @@ const CreatePost = () => {
       eventType: 'Regular Game',
       description: '',
     });
+    setLocationDetails(null);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -212,13 +206,26 @@ const CreatePost = () => {
     }
 
     try {
-      const geocodeResult = await geocodeLocation(formData.location);
+      // Use location details if available, otherwise fallback to geocoding
+      let locationData = {};
+
+      if (
+        locationDetails &&
+        locationDetails.latitude &&
+        locationDetails.longitude
+      ) {
+        // We already have coordinates from the autocomplete
+        locationData = locationDetails;
+      } else {
+        // Fallback to your existing geocoding service
+        locationData = await geocodeLocation(formData.location);
+      }
 
       await addDoc(collection(db, 'posts'), {
         startTime: `${formData.startHour}:${formData.startMinute} ${formData.startPeriod}`,
         endTime: `${formData.endHour}:${formData.endMinute} ${formData.endPeriod}`,
         date: formData.date,
-        location: geocodeResult.formattedAddress || formData.location,
+        location: locationData.formattedAddress || formData.location,
         type: formData.type,
         eventType: formData.eventType,
         description: formData.description.trim(),
@@ -226,10 +233,12 @@ const CreatePost = () => {
         userName: user.displayName || user.email,
         createdAt: Timestamp.now(),
         joinedPlayers: [],
-        hasExactLocation: geocodeResult.isValid,
-        ...(geocodeResult.isValid && {
-          latitude: geocodeResult.latitude,
-          longitude: geocodeResult.longitude,
+        hasExactLocation: locationData.isValid,
+        ...(locationData.isValid && {
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          // Add GeoPoint for Firestore geospatial queries
+          geoPoint: new GeoPoint(locationData.latitude, locationData.longitude),
         }),
       });
 
@@ -530,34 +539,18 @@ const CreatePost = () => {
           <TimeSelector prefix='end' label='End Time' required={true} />
         </div>
 
-        {/* Location */}
+        {/* Location with Autocomplete */}
         <div>
           <label className='block text-sm font-medium text-gray-700 mb-1'>
             Location <span className='text-red-500'>*</span>
           </label>
-          <div className='relative'>
-            <input
-              type='text'
-              name='location'
-              value={formData.location}
-              onChange={handleChange}
-              list='locationSuggestions'
-              placeholder='e.g., Enterprise Park, Redding, CA'
-              className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500'
-              required
-            />
-            {/* Location pin emoji overlay */}
-            <div className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3'>
-              <span role='img' aria-label='location' className='text-gray-500'>
-                📍
-              </span>
-            </div>
-          </div>
-          <datalist id='locationSuggestions'>
-            {locationSuggestions.map((loc) => (
-              <option key={loc} value={loc} />
-            ))}
-          </datalist>
+          <LocationAutocomplete
+            value={formData.location}
+            onChange={handleChange}
+            placeholder='e.g., Enterprise Park, Redding, CA'
+            required={true}
+            onPlaceSelected={(details) => setLocationDetails(details)}
+          />
           <p className='text-xs text-gray-500 mt-1'>
             Enter a specific location for accurate distance calculations
           </p>
