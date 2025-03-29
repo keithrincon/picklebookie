@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import CreatePost from '../components/posts/CreatePost';
 import PostFeed from '../components/posts/PostFeed';
+import EnhancedSearchBar from '../components/search/EnhancedSearchBar';
 import { Link } from 'react-router-dom';
 
 const Home = () => {

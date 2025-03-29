@@ -4,7 +4,7 @@ import { collection, addDoc, Timestamp, GeoPoint } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { geocodeLocation } from '../../services/locationServices';
-import LocationAutocomplete from '../../components/location/LocationAutocomplete';
+import LocationAutocomplete from '../location/LocationAutocomplete'; // Update path if needed
 
 const CreatePost = () => {
   // Form state
@@ -215,7 +215,12 @@ const CreatePost = () => {
         locationDetails.longitude
       ) {
         // We already have coordinates from the autocomplete
-        locationData = locationDetails;
+        locationData = {
+          formattedAddress: locationDetails.formattedAddress,
+          latitude: locationDetails.latitude,
+          longitude: locationDetails.longitude,
+          isValid: true,
+        };
       } else {
         // Fallback to your existing geocoding service
         locationData = await geocodeLocation(formData.location);

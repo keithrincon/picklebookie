@@ -8,20 +8,24 @@ import './index.css';
 import useFirebase from './hooks/useFirebase';
 
 // Component imports
-import Navbar from './components/shared/Navbar';
-import Footer from './components/shared/Footer';
+import AppHeader from './components/navigation/AppHeader';
+import BottomNav from './components/navigation/BottomNav';
 import ErrorBoundary from './components/shared/ErrorBoundary';
-import FeedbackButton from './components/feedback/FeedbackButton'; // Add this import
+import FeedbackButton from './components/feedback/FeedbackButton';
 
 // Lazy-loaded components
 const Home = React.lazy(() => import('./pages/Home'));
+const Explore = React.lazy(() => import('./pages/Explore'));
+const CreatePost = React.lazy(() => import('./components/posts/CreatePost'));
 const Matches = React.lazy(() => import('./pages/Matches'));
 const Profile = React.lazy(() => import('./pages/Profile'));
+const MyPlaces = React.lazy(() => import('./pages/MyPlaces'));
 const SignUp = React.lazy(() => import('./components/auth/SignUp'));
 const LogIn = React.lazy(() => import('./components/auth/LogIn'));
 const ForgotPassword = React.lazy(() =>
   import('./components/auth/ForgotPassword')
 );
+const Search = React.lazy(() => import('./pages/Search'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 // Lazy load the admin component
 const FeedbackAdmin = React.lazy(() =>
@@ -35,25 +39,29 @@ function App() {
     <AuthProvider>
       <FirebaseProvider>
         <div className='min-h-screen bg-off-white flex flex-col'>
-          <Navbar />
-          <main className='flex-1 p-4 mt-4'>
+          <AppHeader />
+          <main className='flex-1 pb-20'>
             <ErrorBoundary>
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
                   <Route path='/' element={<Home />} />
+                  <Route path='/explore' element={<Explore />} />
+                  <Route path='/create' element={<CreatePost />} />
+                  <Route path='/my-places' element={<MyPlaces />} />
+                  <Route path='/search' element={<Search />} />
                   <Route path='/signup' element={<SignUp />} />
                   <Route path='/login' element={<LogIn />} />
                   <Route path='/forgot-password' element={<ForgotPassword />} />
                   <Route path='/matches/:matchId' element={<Matches />} />
                   <Route path='/profile/:userId' element={<Profile />} />
-                  {/* Add admin route for feedback */}
+                  {/* Admin route for feedback */}
                   <Route path='/admin/feedback' element={<FeedbackAdmin />} />
                   <Route path='*' element={<NotFound />} />
                 </Routes>
               </Suspense>
             </ErrorBoundary>
           </main>
-          <Footer />
+          <BottomNav />
           {/* Add the FeedbackButton component */}
           <FeedbackButton />
           <ToastContainer position='top-right' autoClose={3000} />

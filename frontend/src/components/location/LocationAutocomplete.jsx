@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { LoadScript, Autocomplete } from '@react-google-maps/api';
 
+// Only include the places library
 const libraries = ['places'];
 
 const LocationAutocomplete = ({
   value,
   onChange,
-  placeholder,
-  required,
-  apiKey,
+  placeholder = 'Enter location',
+  required = false,
   onPlaceSelected,
 }) => {
   const [autocomplete, setAutocomplete] = useState(null);
   const [apiLoaded, setApiLoaded] = useState(true);
   const [apiLoadError, setApiLoadError] = useState(false);
+
+  // Get API key from environment variable
+  const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
   // Set a timeout to detect if Google Maps API fails to load
   useEffect(() => {
@@ -27,7 +30,8 @@ const LocationAutocomplete = ({
   }, []);
 
   // Handle API load errors
-  const handleLoadError = () => {
+  const handleLoadError = (error) => {
+    console.error('Google Maps loading error:', error);
     setApiLoadError(true);
     setApiLoaded(false);
   };
@@ -54,11 +58,42 @@ const LocationAutocomplete = ({
         </div>
         <p className='text-xs text-amber-600 mt-1'>
           Enhanced location features unavailable. This may be due to an ad
-          blocker.
+          blocker or connectivity issue.
         </p>
       </div>
     );
   }
+
+  // Handle place selection
+  const handlePlaceChanged = () => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+
+      // If place has geometry (coordinates), it's a valid place
+      if (place && place.geometry) {
+        const formattedAddress = place.formatted_address || place.name;
+
+        // Update input value
+        onChange({
+          target: {
+            name: 'location',
+            value: formattedAddress,
+          },
+        });
+
+        // Also provide full place data to parent component
+        if (onPlaceSelected) {
+          onPlaceSelected({
+            formattedAddress,
+            latitude: place.geometry.location.lat(),
+            longitude: place.geometry.location.lng(),
+            placeId: place.place_id,
+            isValid: true,
+          });
+        }
+      }
+    }
+  };
 
   // Original component with Google Maps API
   return (
@@ -66,31 +101,16 @@ const LocationAutocomplete = ({
       googleMapsApiKey={apiKey}
       libraries={libraries}
       onError={handleLoadError}
+      loadingElement={
+        <div className='h-10 bg-gray-100 animate-pulse rounded-md' />
+      }
     >
       <div className='relative'>
         <Autocomplete
           onLoad={setAutocomplete}
-          onPlaceChanged={() => {
-            if (autocomplete) {
-              const place = autocomplete.getPlace();
-              if (place.geometry) {
-                // Your existing place handling code
-                onChange({
-                  target: {
-                    name: 'location',
-                    value: place.formatted_address || place.name,
-                  },
-                });
-
-                onPlaceSelected?.({
-                  formattedAddress: place.formatted_address || place.name,
-                  latitude: place.geometry.location.lat(),
-                  longitude: place.geometry.location.lng(),
-                  placeId: place.place_id,
-                  isValid: true,
-                });
-              }
-            }
+          onPlaceChanged={handlePlaceChanged}
+          options={{
+            componentRestrictions: { country: 'us' },
           }}
         >
           <input

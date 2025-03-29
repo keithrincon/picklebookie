@@ -3,19 +3,23 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import SearchBar from '../search/SearchBar';
 
-const UserAvatar = ({ user }) => {
-  return user?.photoURL ? (
-    <img
-      src={user.photoURL}
-      alt='Profile'
-      className='w-8 h-8 rounded-full border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'
-      onError={(e) => {
-        e.target.src = '/default-avatar.png'; // Updated fallback path
-      }}
-    />
-  ) : (
-    <div className='w-8 h-8 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'>
-      {(user?.displayName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+const UserAvatar = ({ user, onClick }) => {
+  return (
+    <div onClick={onClick} className='cursor-pointer'>
+      {user?.photoURL ? (
+        <img
+          src={user.photoURL}
+          alt='Profile'
+          className='w-8 h-8 rounded-full border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'
+          onError={(e) => {
+            e.target.src = '/default-avatar.png'; // Updated fallback path
+          }}
+        />
+      ) : (
+        <div className='w-8 h-8 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'>
+          {(user?.displayName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+        </div>
+      )}
     </div>
   );
 };
@@ -105,6 +109,13 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const navigateToProfile = (e) => {
+    e.stopPropagation(); // Prevent toggling dropdown
+    if (user) {
+      navigate(`/profile/${user.uid}`);
+    }
+  };
+
   return (
     <nav className='bg-pickle-green text-white shadow-md sticky top-0 z-50'>
       <div className='container mx-auto px-4'>
@@ -140,32 +151,34 @@ const Navbar = () => {
           <div className='hidden md:flex items-center'>
             {user ? (
               <div className='relative' ref={dropdownRef}>
-                <button
-                  onClick={toggleDropdown}
-                  className='flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-pickle-green-dark transition-colors'
-                  aria-expanded={isDropdownOpen}
-                  aria-haspopup='true'
-                  aria-label='User menu'
-                >
-                  <UserAvatar user={user} />
+                <div className='flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-pickle-green-dark transition-colors'>
+                  <UserAvatar user={user} onClick={navigateToProfile} />
                   <span className='hidden lg:inline'>
                     {user.displayName || user.email?.split('@')[0]}
                   </span>
-                  <svg
-                    className='w-4 h-4'
-                    fill='none'
-                    stroke='currentColor'
-                    viewBox='0 0 24 24'
-                    xmlns='http://www.w3.org/2000/svg'
+                  <button
+                    onClick={toggleDropdown}
+                    className='focus:outline-none'
+                    aria-expanded={isDropdownOpen}
+                    aria-haspopup='true'
+                    aria-label='User menu'
                   >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M19 9l-7 7-7-7'
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      className='w-4 h-4'
+                      fill='none'
+                      stroke='currentColor'
+                      viewBox='0 0 24 24'
+                      xmlns='http://www.w3.org/2000/svg'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M19 9l-7 7-7-7'
+                      />
+                    </svg>
+                  </button>
+                </div>
 
                 {/* Desktop Dropdown Menu */}
                 {isDropdownOpen && (
@@ -224,7 +237,7 @@ const Navbar = () => {
             )}
             {user && (
               <div className='mr-2'>
-                <UserAvatar user={user} />
+                <UserAvatar user={user} onClick={navigateToProfile} />
               </div>
             )}
             <button
