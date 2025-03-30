@@ -10,7 +10,7 @@ const BottomNav = () => {
   // Define navigation items
   const navItems = [
     {
-      name: 'Feed',
+      name: 'Home',
       path: '/',
       icon: (
         <svg
@@ -24,7 +24,7 @@ const BottomNav = () => {
             strokeLinecap='round'
             strokeLinejoin='round'
             strokeWidth={2}
-            d='M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1M19 20a2 2 0 002-2V8a2 2 0 00-2-2h-1'
+            d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'
           />
         </svg>
       ),
@@ -35,7 +35,7 @@ const BottomNav = () => {
           viewBox='0 0 24 24'
           fill='currentColor'
         >
-          <path d='M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1M19 20a2 2 0 002-2V8a2 2 0 00-2-2h-1' />
+          <path d='M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z' />
         </svg>
       ),
     },
@@ -65,7 +65,7 @@ const BottomNav = () => {
           viewBox='0 0 24 24'
           fill='currentColor'
         >
-          <path d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' />
+          <path d='M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
         </svg>
       ),
     },
@@ -132,8 +132,7 @@ const BottomNav = () => {
           viewBox='0 0 24 24'
           fill='currentColor'
         >
-          <path d='M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z' />
-          <path d='M15 11a3 3 0 11-6 0 3 3 0 016 0z' />
+          <path d='M5.05 4.05A7 7 0 0110 1.05c1.91 0 3.73.75 5.07 2.11l.88.88c.19.19.29.44.29.7v5.17a7 7 0 01-2.11 5.07l-3.88 3.88a1 1 0 01-1.41 0l-3.88-3.88A7 7 0 014.05 10V4.83c0-.27.1-.52.29-.7l.71-.71zM10 5a1 1 0 100 2 1 1 0 000-2z' />
         </svg>
       ),
     },
@@ -180,7 +179,7 @@ const BottomNav = () => {
   };
 
   return (
-    <div className='fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 pb-safe-area'>
+    <nav className='fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 pb-safe-area'>
       <div className='flex justify-around items-center h-16'>
         {navItems.map((item) => (
           <Link
@@ -194,7 +193,7 @@ const BottomNav = () => {
             aria-label={item.name}
           >
             {item.highlight && (
-              <div className='absolute -top-5 w-12 h-12 bg-pickle-green rounded-full flex items-center justify-center shadow-lg'>
+              <div className='absolute -top-5 w-12 h-12 bg-pickle-green rounded-full flex items-center justify-center shadow-lg transform transition-transform hover:scale-105'>
                 <span className='text-white'>
                   {isActive(item.path) ? item.activeIcon : item.icon}
                 </span>
@@ -211,7 +210,7 @@ const BottomNav = () => {
           </Link>
         ))}
       </div>
-    </div>
+    </nav>
   );
 };
 

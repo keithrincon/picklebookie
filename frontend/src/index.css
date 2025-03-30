@@ -16,3 +16,24 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Safe area padding for bottom navigation on mobile devices */
+.pb-safe-area {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Additional spacing for content to account for bottom navigation */
+.mb-navigation {
+  margin-bottom: 4rem; /* Adjust based on your bottom navigation height */
+}

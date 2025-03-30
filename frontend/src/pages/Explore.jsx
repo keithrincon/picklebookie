@@ -1,11 +1,11 @@
 // src/pages/Explore.jsx
 import React from 'react';
-import EnhancedSearchBar from '../components/search/EnhancedSearchBar';
+import SearchSection from '../components/search/SearchSection';
 
 const Explore = () => {
   return (
     <div className='flex flex-col min-h-screen bg-off-white'>
-      <EnhancedSearchBar placeholder='Explore players, locations, events...' />
+      <SearchSection placeholder='Explore players, locations, events...' />
 
       <div className='p-4'>
         <h1 className='text-2xl font-bold text-pickle-green mb-4'>Explore</h1>

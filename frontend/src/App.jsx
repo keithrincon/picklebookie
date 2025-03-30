@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { Suspense } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { FirebaseProvider } from './context/FirebaseContext';
@@ -38,7 +39,7 @@ function App() {
   return (
     <AuthProvider>
       <FirebaseProvider>
-        <div className='min-h-screen bg-off-white flex flex-col'>
+        <div className='min-h-screen bg-gray-50 flex flex-col'>
           <AppHeader />
           <main className='flex-1 pb-20'>
             <ErrorBoundary>

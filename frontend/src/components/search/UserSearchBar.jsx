@@ -1,8 +1,9 @@
+// src/components/search/UserSearchBar.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-const SearchBar = ({ id }) => {
+const UserSearchBar = ({ id, className = '' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -11,7 +12,7 @@ const SearchBar = ({ id }) => {
   const searchRef = useRef(null);
   const debounceTimerRef = useRef(null);
   const prevSearchTermRef = useRef('');
-  const location = useLocation(); // Track route changes
+  const location = useLocation();
 
   // Initialize Firebase Functions
   const functions = getFunctions();
@@ -35,7 +36,7 @@ const SearchBar = ({ id }) => {
   useEffect(() => {
     setSearchTerm('');
     setShowResults(false);
-  }, [location.pathname]); // Runs when the route changes
+  }, [location.pathname]);
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -64,7 +65,7 @@ const SearchBar = ({ id }) => {
     [searchUsersFunction]
   );
 
-  // Handle search term changes - fixed to prevent infinite loop
+  // Handle search term changes
   useEffect(() => {
     // Skip effect if search term hasn't changed
     if (prevSearchTermRef.current === searchTerm) {
@@ -105,7 +106,7 @@ const SearchBar = ({ id }) => {
   };
 
   return (
-    <div className='relative w-full' ref={searchRef}>
+    <div className={`relative ${className}`} ref={searchRef}>
       <div className='relative'>
         <input
           id={id}
@@ -114,14 +115,13 @@ const SearchBar = ({ id }) => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={handleInputFocus}
-          className='w-full p-2 pl-3 pr-10 border rounded bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm'
+          className='w-full p-3 pl-10 pr-3 rounded-lg border border-gray-200 bg-white text-gray-800 
+                    focus:outline-none focus:ring-2 focus:ring-pickle-green text-sm'
           aria-label='Search users'
         />
-        <button
-          onClick={() => setShowResults(searchTerm.length >= 2)}
-          className='absolute right-2 top-1/2 transform -translate-y-1/2 text-green-600 hover:text-green-800'
-          aria-label='Search'
-        >
+
+        {/* Search icon */}
+        <div className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'>
           <svg
             xmlns='http://www.w3.org/2000/svg'
             className='h-5 w-5'
@@ -136,22 +136,49 @@ const SearchBar = ({ id }) => {
               d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
             />
           </svg>
-        </button>
+        </div>
+
+        {/* Clear button */}
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm('')}
+            className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600'
+            aria-label='Clear search'
+          >
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              className='h-5 w-5'
+              fill='none'
+              viewBox='0 0 24 24'
+              stroke='currentColor'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M6 18L18 6M6 6l12 12'
+              />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Results container */}
       {showResults && (
-        <div className='absolute z-10 bg-white w-full mt-1 rounded shadow-lg max-h-64 overflow-y-auto'>
+        <div className='absolute z-10 bg-white w-full mt-1 rounded-lg shadow-lg max-h-64 overflow-y-auto border border-gray-100'>
           {isLoading ? (
-            <div className='p-3 text-center text-gray-500'>Loading...</div>
+            <div className='p-4 text-center text-gray-500 flex items-center justify-center'>
+              <div className='animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-pickle-green mr-2'></div>
+              <span>Searching...</span>
+            </div>
           ) : error ? (
-            <div className='p-3 text-center text-red-500'>{error}</div>
+            <div className='p-4 text-center text-red-500'>{error}</div>
           ) : results.length > 0 ? (
             results.map((user) => (
               <Link
                 key={user.id}
                 to={`/profile/${user.id}`}
-                className='flex items-center p-3 hover:bg-gray-100 border-b border-gray-100 last:border-none'
+                className='flex items-center p-3 hover:bg-gray-50 border-b border-gray-100 last:border-none transition-colors'
                 onClick={() => {
                   setShowResults(false);
                   setSearchTerm('');
@@ -161,15 +188,15 @@ const SearchBar = ({ id }) => {
                   <img
                     src={user.photoURL}
                     alt={user.name}
-                    className='w-8 h-8 rounded-full mr-2'
+                    className='w-10 h-10 rounded-full mr-3 object-cover'
                     onError={(e) => {
                       e.target.src = '/default-avatar.png';
                     }}
                   />
                 ) : (
-                  <div className='w-8 h-8 rounded-full mr-2 bg-gray-200 flex items-center justify-center'>
-                    <span className='text-sm font-medium text-gray-600'>
-                      {user.name?.charAt(0) || '?'}
+                  <div className='w-10 h-10 rounded-full mr-3 bg-gradient-to-br from-green-300 to-pickle-green flex items-center justify-center'>
+                    <span className='text-sm font-medium text-white'>
+                      {user.name?.charAt(0).toUpperCase() || '?'}
                     </span>
                   </div>
                 )}
@@ -181,10 +208,26 @@ const SearchBar = ({ id }) => {
                     </div>
                   )}
                 </div>
+                <div className='text-pickle-green'>
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    className='h-5 w-5'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M9 5l7 7-7 7'
+                    />
+                  </svg>
+                </div>
               </Link>
             ))
           ) : (
-            <div className='p-3 text-center text-gray-500'>No users found</div>
+            <div className='p-4 text-center text-gray-500'>No users found</div>
           )}
         </div>
       )}
@@ -192,4 +235,4 @@ const SearchBar = ({ id }) => {
   );
 };
 
-export default SearchBar;
+export default UserSearchBar;
