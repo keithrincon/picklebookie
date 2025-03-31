@@ -7,7 +7,9 @@ import {
   getDocs,
   Timestamp,
   orderBy,
+  limit,
 } from 'firebase/firestore';
+import { useAuth } from './AuthContext';
 
 const PostsContext = createContext();
 
@@ -19,6 +21,8 @@ export const PostsProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [locationPermission, setLocationPermission] = useState('pending'); // 'granted', 'denied', 'pending'
+  const [userPreferences, setUserPreferences] = useState(null); // Added for personalization
+  const { user } = useAuth(); // Added to access current user
 
   // Fetch posts from Firestore
   useEffect(() => {
@@ -59,6 +63,40 @@ export const PostsProvider = ({ children }) => {
 
     fetchPosts();
   }, []);
+
+  // NEW: Fetch user preferences for personalization
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      if (!user) return;
+
+      try {
+        // Query userPreferences collection for the current user
+        const userPrefsQuery = query(
+          collection(db, 'userPreferences'),
+          where('userId', '==', user.uid),
+          limit(1)
+        );
+
+        const snapshot = await getDocs(userPrefsQuery);
+
+        if (!snapshot.empty) {
+          setUserPreferences(snapshot.docs[0].data());
+        } else {
+          // If no preferences found, set default values
+          setUserPreferences({
+            userId: user.uid,
+            skillLevel: null,
+            preferredLocations: [],
+            joinedGames: [],
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user preferences:', error);
+      }
+    };
+
+    fetchUserPreferences();
+  }, [user]);
 
   // Check for stored location permission
   useEffect(() => {
@@ -114,6 +152,63 @@ export const PostsProvider = ({ children }) => {
     setUserLocation(null);
   };
 
+  // NEW: Filter posts based on content filter (for "For You" tab)
+  const getFilteredPosts = (contentFilter) => {
+    if (!contentFilter || contentFilter === 'all') {
+      return posts;
+    }
+
+    // For "For You" tab, apply personalization logic
+    if (contentFilter === 'forYou' && user) {
+      return posts.filter((post) => {
+        // If user has joined this game, include it
+        const userJoined = post.joinedPlayers?.includes(user.uid);
+
+        // Include games nearby (if location data is available)
+        const isNearby =
+          userLocation && post.latitude && post.longitude
+            ? calculateDistance(
+                userLocation.latitude,
+                userLocation.longitude,
+                post.latitude,
+                post.longitude
+              ) < 10
+            : false;
+
+        // Include games that match user's skill level (if set in preferences and in post)
+        const skillMatch =
+          userPreferences?.skillLevel &&
+          post.skillLevel &&
+          post.skillLevel === userPreferences.skillLevel;
+
+        // Include games at preferred locations
+        const locationMatch =
+          userPreferences?.preferredLocations?.length > 0 &&
+          userPreferences.preferredLocations.includes(post.location);
+
+        // Include the post if any of these criteria are met
+        return userJoined || isNearby || skillMatch || locationMatch;
+      });
+    }
+
+    return posts;
+  };
+
+  // Helper function to calculate distance between two points (for personalization)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c * 0.621371; // Convert to miles
+  };
+
   return (
     <PostsContext.Provider
       value={{
@@ -124,9 +219,13 @@ export const PostsProvider = ({ children }) => {
         locationPermission,
         requestLocationAccess,
         clearLocationPermission,
+        userPreferences, // NEW: Exposing user preferences
+        getFilteredPosts, // NEW: Exposing the filter function
       }}
     >
       {children}
     </PostsContext.Provider>
   );
 };
+
+export default PostsContext;

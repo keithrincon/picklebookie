@@ -8,6 +8,7 @@ import SearchSection from '../components/search/SearchSection';
 
 const Home = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [activeTab, setActiveTab] = useState('forYou'); // NEW: Added for personalized tabs
   const { user } = useAuth();
 
   const toggleCreateForm = () => {
@@ -223,13 +224,35 @@ const Home = () => {
             </div>
           )}
 
-          {/* Post Feed Section */}
+          {/* Post Feed Section with Tabs */}
           {!showCreateForm && (
             <div className='max-w-2xl mx-auto w-full'>
-              <h2 className='text-xl font-semibold text-pickle-green mb-4 font-poppins'>
-                Available Games
-              </h2>
-              <PostFeed />
+              {/* NEW: Content Tabs */}
+              <div className='flex border-b border-gray-200 mb-4'>
+                <button
+                  onClick={() => setActiveTab('forYou')}
+                  className={`flex-1 py-3 text-center font-medium ${
+                    activeTab === 'forYou'
+                      ? 'text-pickle-green border-b-2 border-pickle-green'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  For You
+                </button>
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className={`flex-1 py-3 text-center font-medium ${
+                    activeTab === 'all'
+                      ? 'text-pickle-green border-b-2 border-pickle-green'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  All Games
+                </button>
+              </div>
+
+              {/* Pass the active tab to PostFeed */}
+              <PostFeed contentFilter={activeTab} />
             </div>
           )}
         </div>

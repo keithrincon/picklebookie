@@ -1,9 +1,10 @@
 // src/components/navigation/AppHeader.jsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import SidebarNav from './SidebarNav'; // Import the SidebarNav component
 
-// UserAvatar component
+// UserAvatar component - now directly navigates to profile
 const UserAvatar = ({ user, onClick }) => {
   return (
     <div onClick={onClick} className='cursor-pointer'>
@@ -11,13 +12,13 @@ const UserAvatar = ({ user, onClick }) => {
         <img
           src={user.photoURL}
           alt='Profile'
-          className='w-8 h-8 rounded-full border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'
+          className='w-10 h-10 rounded-full border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'
           onError={(e) => {
             e.target.src = '/default-avatar.png';
           }}
         />
       ) : (
-        <div className='w-8 h-8 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'>
+        <div className='w-10 h-10 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'>
           {(user?.displayName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
         </div>
       )}
@@ -28,10 +29,9 @@ const UserAvatar = ({ user, onClick }) => {
 const AppHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logOut } = useAuth();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const dropdownRef = useRef(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Handle loading state for user data
   useEffect(() => {
@@ -40,154 +40,92 @@ const AppHeader = () => {
     }
   }, [user]);
 
-  // Get current page title based on path
-  const getPageTitle = () => {
-    const path = location.pathname;
-
-    if (path === '/') return 'Feed';
-    if (path === '/explore') return 'Explore';
-    if (path === '/create') return 'Create';
-    if (path === '/my-places') return 'My Places';
-    if (path.startsWith('/profile')) return 'Profile';
-    if (path === '/search') return 'Search';
-
-    // Extract dynamic segments like /profile/userId
-    if (path.startsWith('/profile/')) return 'Profile';
-    if (path.startsWith('/matches/')) return 'Match Details';
-
-    return 'PickleBookie';
-  };
-
-  // Handle clicking outside to close dropdown
+  // Close sidebar when changing routes
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Close dropdown when changing routes
-  useEffect(() => {
-    setIsDropdownOpen(false);
+    setIsSidebarOpen(false);
   }, [location.pathname]);
 
+  // Navigate to home on logo click
   const handleLogoClick = () => {
     navigate('/');
   };
 
-  const handleLogout = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    try {
-      await logOut();
-      navigate('/');
-      setIsDropdownOpen(false);
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
+  // Toggle sidebar function
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const toggleDropdown = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
+  // Navigate directly to profile on avatar click
   const navigateToProfile = () => {
     if (user) {
       navigate(`/profile/${user.uid}`);
-      setIsDropdownOpen(false);
     }
   };
 
   return (
-    <header className='bg-pickle-green text-white sticky top-0 z-40 shadow-md'>
-      <div className='flex items-center justify-between h-14 px-4'>
-        {/* Logo/Home button */}
-        <div
-          onClick={handleLogoClick}
-          className='flex items-center space-x-2 cursor-pointer'
-        >
-          <svg
-            xmlns='http://www.w3.org/2000/svg'
-            className='h-8 w-8'
-            viewBox='0 0 20 20'
-            fill='currentColor'
+    <>
+      {/* Add the SidebarNav component */}
+      <SidebarNav
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      <header className='bg-pickle-green text-white sticky top-0 z-40 shadow-md'>
+        <div className='flex items-center justify-between h-14 px-4'>
+          {/* Left: Menu button or spacer */}
+          {user ? (
+            <button
+              onClick={toggleSidebar}
+              className='focus:outline-none p-1 rounded-md hover:bg-pickle-green-dark transition-colors'
+              aria-label='Toggle navigation menu'
+            >
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                className='h-6 w-6'
+                fill='none'
+                viewBox='0 0 24 24'
+                stroke='currentColor'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M4 6h16M4 12h16M4 18h16'
+                />
+              </svg>
+            </button>
+          ) : (
+            <div className='w-6' aria-hidden='true'></div>
+          )}
+
+          {/* Center: App name */}
+          <h1
+            onClick={handleLogoClick}
+            className='font-poppins font-bold text-xl mx-auto cursor-pointer hover:text-white transition-colors'
           >
-            <path
-              fillRule='evenodd'
-              d='M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z'
-              clipRule='evenodd'
-            />
-          </svg>
-          <h1 className='font-poppins font-bold text-xl hidden sm:block'>
             PICKLEBOOKIE
           </h1>
-        </div>
 
-        {/* Page Title - shows on mobile */}
-        <div className='font-medium text-lg sm:hidden'>{getPageTitle()}</div>
-
-        {/* Right side actions */}
-        <div className='flex items-center space-x-3'>
-          {/* User Account Section or Login/Signup Buttons */}
-          {!isLoading && (
-            <>
-              {user ? (
-                <div className='relative' ref={dropdownRef}>
-                  <div onClick={toggleDropdown} className='cursor-pointer'>
-                    <UserAvatar user={user} onClick={toggleDropdown} />
-                  </div>
-
-                  {/* User Dropdown Menu */}
-                  {isDropdownOpen && (
-                    <div className='absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50'>
-                      <div
-                        onClick={navigateToProfile}
-                        className='block px-4 py-2 text-gray-800 hover:bg-gray-100 cursor-pointer'
-                      >
-                        Profile
-                      </div>
-                      <div className='border-t border-gray-200 my-1'></div>
-                      <div
-                        onClick={handleLogout}
-                        className='block px-4 py-2 text-gray-800 hover:bg-gray-100 cursor-pointer'
-                      >
-                        Log Out
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className='flex items-center space-x-2'>
+          {/* Right: User section */}
+          <div className='flex items-center'>
+            {!isLoading && (
+              <>
+                {user ? (
+                  <UserAvatar user={user} onClick={navigateToProfile} />
+                ) : (
                   <Link
                     to='/login'
                     className='bg-white text-pickle-green px-3 py-1 rounded-lg text-sm hover:bg-gray-100 transition-colors font-medium'
                   >
                     Log In
                   </Link>
-                  <Link
-                    to='/signup'
-                    className='hidden sm:block border border-white px-3 py-1 rounded-lg text-sm hover:bg-pickle-green-dark transition-colors font-medium'
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
-            </>
-          )}
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 };
 

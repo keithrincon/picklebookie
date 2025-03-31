@@ -1,8 +1,8 @@
 // src/App.jsx
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { FirebaseProvider } from './context/FirebaseContext';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
@@ -12,7 +12,6 @@ import useFirebase from './hooks/useFirebase';
 import AppHeader from './components/navigation/AppHeader';
 import BottomNav from './components/navigation/BottomNav';
 import ErrorBoundary from './components/shared/ErrorBoundary';
-import FeedbackButton from './components/feedback/FeedbackButton';
 
 // Lazy-loaded components
 const Home = React.lazy(() => import('./pages/Home'));
@@ -32,9 +31,28 @@ const NotFound = React.lazy(() => import('./pages/NotFound'));
 const FeedbackAdmin = React.lazy(() =>
   import('./components/feedback/FeedbackAdmin')
 );
+// New page components
+const Settings = React.lazy(() => import('./pages/Settings'));
+const HelpAndFeedback = React.lazy(() => import('./pages/HelpAndFeedback'));
 
 function App() {
   useFirebase();
+  const location = useLocation();
+
+  // Effect to set the active tab in the Help page based on URL parameters
+  useEffect(() => {
+    if (location.pathname === '/help' && location.search === '?tab=feedback') {
+      // Wait for the component to load, then set the active tab
+      setTimeout(() => {
+        const feedbackTabButton = document.querySelector(
+          '[data-section="feedback"]'
+        );
+        if (feedbackTabButton) {
+          feedbackTabButton.click();
+        }
+      }, 100);
+    }
+  }, [location]);
 
   return (
     <AuthProvider>
@@ -57,14 +75,18 @@ function App() {
                   <Route path='/profile/:userId' element={<Profile />} />
                   {/* Admin route for feedback */}
                   <Route path='/admin/feedback' element={<FeedbackAdmin />} />
+
+                  {/* New Routes */}
+                  <Route path='/settings' element={<Settings />} />
+                  <Route path='/help' element={<HelpAndFeedback />} />
+
                   <Route path='*' element={<NotFound />} />
                 </Routes>
               </Suspense>
             </ErrorBoundary>
           </main>
           <BottomNav />
-          {/* Add the FeedbackButton component */}
-          <FeedbackButton />
+          {/* Remove the FeedbackButton component since we're now accessing it from the sidebar */}
           <ToastContainer position='top-right' autoClose={3000} />
         </div>
       </FirebaseProvider>
