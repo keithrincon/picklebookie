@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 // Removed the unused import: import { calculateDistance } from '../../services/locationServices';
-import { usePosts } from '../../context/PostsContext';
+// import { usePosts } from '../../context/PostsContext';
 
 const PostCard = ({ post, isExpanded, onToggleExpand }) => {
   const formatDate = (dateString) => {
