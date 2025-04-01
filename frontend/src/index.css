@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+/* postcss-ignore-next-line */
 @tailwind base;
+/* postcss-ignore-next-line */
 @tailwind components;
+/* postcss-ignore-next-line */
 @tailwind utilities;
 
 body {
@@ -36,4 +40,25 @@ code {
 /* Additional spacing for content to account for bottom navigation */
 .mb-navigation {
   margin-bottom: 4rem; /* Adjust based on your bottom navigation height */
+}
+
+/* For styling the Google Maps PlaceAutocompleteElement */
+.google-maps-autocomplete gmpx-place-autocomplete {
+  width: 100%;
+}
+
+.google-maps-autocomplete input,
+.google-maps-autocomplete gmpx-place-autocomplete::part(input) {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  outline: none;
+}
+
+.google-maps-autocomplete input:focus,
+.google-maps-autocomplete gmpx-place-autocomplete::part(input):focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2); /* pickle-green with transparency */
+  border-color: #4caf50;
 }

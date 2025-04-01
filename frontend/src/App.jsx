@@ -34,6 +34,8 @@ const FeedbackAdmin = React.lazy(() =>
 // New page components
 const Settings = React.lazy(() => import('./pages/Settings'));
 const HelpAndFeedback = React.lazy(() => import('./pages/HelpAndFeedback'));
+// Sign-up landing page
+const SignUpLanding = React.lazy(() => import('./pages/SignUpLanding'));
 
 function App() {
   useFirebase();
@@ -63,6 +65,10 @@ function App() {
             <ErrorBoundary>
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
+                  {/* Landing page route */}
+                  <Route path='/welcome' element={<SignUpLanding />} />
+
+                  {/* Existing routes */}
                   <Route path='/' element={<Home />} />
                   <Route path='/explore' element={<Explore />} />
                   <Route path='/create' element={<CreatePost />} />

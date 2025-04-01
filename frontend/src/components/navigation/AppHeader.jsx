@@ -5,18 +5,47 @@ import { useAuth } from '../../context/AuthContext';
 import SidebarNav from './SidebarNav'; // Import the SidebarNav component
 
 // UserAvatar component - now directly navigates to profile
+// UserAvatar component with loading state management
 const UserAvatar = ({ user, onClick }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  // Reset states when user changes
+  useEffect(() => {
+    setImageLoaded(false);
+    setHasError(false);
+  }, [user?.photoURL]);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  const handleImageError = () => {
+    setHasError(true);
+  };
+
   return (
     <div onClick={onClick} className='cursor-pointer'>
-      {user?.photoURL ? (
-        <img
-          src={user.photoURL}
-          alt='Profile'
-          className='w-10 h-10 rounded-full border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'
-          onError={(e) => {
-            e.target.src = '/default-avatar.png';
-          }}
-        />
+      {user?.photoURL && !hasError ? (
+        <>
+          {/* Show placeholder while image loads */}
+          {!imageLoaded && (
+            <div className='w-10 h-10 rounded-full bg-pickle-green-light flex items-center justify-center'>
+              <div className='w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+            </div>
+          )}
+
+          {/* Actual image - hidden until loaded */}
+          <img
+            src={user.photoURL}
+            alt='Profile'
+            className={`w-10 h-10 rounded-full border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200 ${
+              imageLoaded ? 'block' : 'hidden'
+            }`}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        </>
       ) : (
         <div className='w-10 h-10 rounded-full bg-white text-pickle-green flex items-center justify-center font-semibold border-2 border-white shadow-sm hover:border-ball-yellow transition-all duration-200'>
           {(user?.displayName?.[0] || user?.email?.[0] || 'U').toUpperCase()}

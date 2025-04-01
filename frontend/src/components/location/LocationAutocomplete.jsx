@@ -2,12 +2,21 @@
 import React, { useEffect, useRef } from 'react';
 
 const LocationAutocomplete = ({
-  onPlaceSelect,
-  defaultValue = '',
+  value,
+  onChange,
+  onPlaceSelected,
   placeholder = 'Enter a location',
+  required = false,
 }) => {
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
+
+  // Update the input value when the value prop changes
+  useEffect(() => {
+    if (inputRef.current && value !== undefined) {
+      inputRef.current.value = value;
+    }
+  }, [value]);
 
   useEffect(() => {
     if (!window.google || !window.google.maps || !window.google.maps.places) {
@@ -19,7 +28,8 @@ const LocationAutocomplete = ({
 
     // Initialize the Google Maps Places Autocomplete
     const autocompleteOptions = {
-      types: ['address', 'establishment', '(regions)'],
+      // Less restrictive types to allow more locations
+      types: ['establishment', 'geocode'],
       fields: [
         'address_components',
         'formatted_address',
@@ -29,7 +39,7 @@ const LocationAutocomplete = ({
       ],
     };
 
-    // Create autocomplete instance
+    // Create autocomplete instance - using the older API for now
     autocompleteRef.current = new window.google.maps.places.Autocomplete(
       inputRef.current,
       autocompleteOptions
@@ -46,7 +56,7 @@ const LocationAutocomplete = ({
 
       // Create a structured place object to pass back
       const placeData = {
-        formatted_address: place.formatted_address,
+        formattedAddress: place.formatted_address,
         name: place.name || place.formatted_address,
         placeId: place.place_id,
         latitude: place.geometry.location.lat(),
@@ -54,15 +64,21 @@ const LocationAutocomplete = ({
       };
 
       // Pass the selected place up to the parent component
-      if (onPlaceSelect) {
-        onPlaceSelect(placeData);
+      if (onPlaceSelected) {
+        onPlaceSelected(placeData);
+      }
+
+      // Update the input value in the parent's form state
+      if (onChange) {
+        const fakeEvent = {
+          target: {
+            name: 'location',
+            value: place.formatted_address || place.name,
+          },
+        };
+        onChange(fakeEvent);
       }
     });
-
-    // Set default value if provided
-    if (defaultValue) {
-      inputRef.current.value = defaultValue;
-    }
 
     // Cleanup function
     return () => {
@@ -73,16 +89,26 @@ const LocationAutocomplete = ({
         );
       }
     };
-  }, [onPlaceSelect, defaultValue]);
+  }, [onPlaceSelected, onChange]);
+
+  const handleInputChange = (e) => {
+    if (onChange) {
+      onChange(e);
+    }
+  };
 
   return (
     <div className='location-autocomplete-container'>
       <input
         ref={inputRef}
         type='text'
+        name='location'
         className='w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pickle-green'
         placeholder={placeholder}
-        defaultValue={defaultValue}
+        onChange={handleInputChange}
+        required={required}
+        autoComplete='off' // This can help with native browser autocomplete interference
+        value={value || ''}
       />
     </div>
   );
