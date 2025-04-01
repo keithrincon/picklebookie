@@ -58,7 +58,7 @@ const UserAvatar = ({ user, onClick }) => {
 const AppHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logOut } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -88,6 +88,16 @@ const AppHeader = () => {
   const navigateToProfile = () => {
     if (user) {
       navigate(`/profile/${user.uid}`);
+    }
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    try {
+      await logOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 
@@ -136,7 +146,31 @@ const AppHeader = () => {
           </h1>
 
           {/* Right: User section */}
-          <div className='flex items-center'>
+          <div className='flex items-center space-x-3'>
+            {/* Log Out Button - Only visible when user is logged in */}
+            {!isLoading && user && (
+              <button
+                onClick={handleSignOut}
+                className='flex items-center justify-center bg-pickle-green-dark hover:bg-ball-yellow hover:text-pickle-green px-3 py-1 rounded-md transition-colors focus:outline-none'
+                title='Log Out'
+              >
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5 mr-1'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
+                  <path
+                    fillRule='evenodd'
+                    d='M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414L11.414 3H3zm0 2h6v4h4v6H3V5zm9 1h.586L9 9.586V6z'
+                    clipRule='evenodd'
+                  />
+                  <path d='M12 14l2-2m0 0l-2-2m2 2H7' />
+                </svg>
+                <span className='text-sm font-medium'>Log Out</span>
+              </button>
+            )}
+
             {!isLoading && (
               <>
                 {user ? (
