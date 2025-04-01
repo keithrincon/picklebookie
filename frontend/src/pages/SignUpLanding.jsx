@@ -10,6 +10,9 @@ const SignUpLanding = () => {
   const { logInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
+  // If the Imgur link doesn't work, we'll fall back to a placeholder
+  const [imgError, setImgError] = useState(false);
+
   const handleGoogleSignUp = async () => {
     setIsLoading(true);
     try {
@@ -90,33 +93,23 @@ const SignUpLanding = () => {
               )}
             </div>
 
-            {/* App mockup image */}
+            {/* App mockup image - using the direct Imgur link */}
             <div className='md:w-1/2'>
               <div className='bg-white p-2 rounded-xl shadow-2xl transform rotate-2'>
                 <div className='relative'>
-                  {/* Update image path and provide multiple fallback options */}
                   <div className='aspect-[9/16] bg-gray-100 rounded-lg overflow-hidden'>
-                    <img
-                      src={`${
-                        process.env.PUBLIC_URL || ''
-                      }/images/app-mockup.png`}
-                      alt='PickleBookie Website Preview'
-                      className='w-full h-full object-cover'
-                      onError={(e) => {
-                        // First fallback: Try alternate path
-                        e.target.onerror = (e2) => {
-                          // Second fallback: Try direct path
-                          e2.target.onerror = (e3) => {
-                            // Final fallback: Use placeholder
-                            e3.target.onerror = null;
-                            e3.target.src =
-                              'https://via.placeholder.com/800x1600/f3f4f6/94a3b8?text=PickleBookie';
-                          };
-                          e2.target.src = '/app-mockup.png';
-                        };
-                        e.target.src = './images/app-mockup.png';
-                      }}
-                    />
+                    {imgError ? (
+                      <div className='w-full h-full flex items-center justify-center p-4 text-gray-500'>
+                        <p className='text-center'>App preview image</p>
+                      </div>
+                    ) : (
+                      <img
+                        src='https://i.imgur.com/vYfxlNJ.png'
+                        alt='PickleBookie App Preview'
+                        className='w-full h-full object-cover'
+                        onError={() => setImgError(true)}
+                      />
+                    )}
                   </div>
 
                   {/* Floating elements */}
