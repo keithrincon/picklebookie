@@ -90,15 +90,15 @@ const SignUpLanding = () => {
               )}
             </div>
 
-            {/* Image or illustration */}
+            {/* App mockup image */}
             <div className='md:w-1/2'>
               <div className='bg-white p-2 rounded-xl shadow-2xl transform rotate-2'>
                 <div className='relative'>
-                  {/* Placeholder for app screenshot or illustration */}
+                  {/* Your actual app mockup */}
                   <div className='aspect-[9/16] bg-gray-100 rounded-lg overflow-hidden'>
                     <img
-                      src='/images/app-preview.png'
-                      alt='PickleBookie App Preview'
+                      src='/images/app-mockup.png'
+                      alt='PickleBookie Website Preview'
                       className='w-full h-full object-cover'
                       onError={(e) => {
                         e.target.src =
@@ -124,13 +124,6 @@ const SignUpLanding = () => {
                       </svg>
                     </div>
                   </div>
-
-                  <div className='absolute -bottom-6 -left-6 bg-white p-3 rounded-lg shadow-lg'>
-                    <div className='text-pickle-green font-bold'>
-                      50+ Games Today
-                    </div>
-                    <div className='text-gray-500 text-sm'>In your area</div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -142,7 +135,7 @@ const SignUpLanding = () => {
       <div className='py-16 bg-gray-50'>
         <div className='container mx-auto px-4'>
           <h2 className='text-3xl font-bold text-center text-pickle-green mb-12'>
-            Why Pickleball Players Love Our App
+            Why Pickleball Players Love Our Platform
           </h2>
 
           <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
@@ -165,8 +158,8 @@ const SignUpLanding = () => {
                 Find Nearby Courts
               </h3>
               <p className='text-gray-600'>
-                Discover pickleball courts in your area, with ratings,
-                amenities, and current activity.
+                Discover pickleball courts in your area, with details on
+                amenities and current activity.
               </p>
             </div>
 
@@ -217,69 +210,6 @@ const SignUpLanding = () => {
         </div>
       </div>
 
-      {/* Social Proof Section */}
-      <div className='py-16 bg-white'>
-        <div className='container mx-auto px-4'>
-          <h2 className='text-3xl font-bold text-center text-pickle-green mb-2'>
-            Join the Community
-          </h2>
-          <p className='text-center text-gray-600 mb-12 max-w-2xl mx-auto'>
-            PickleBookie is growing fast with players across the country. Here's
-            what our community is saying:
-          </p>
-
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-            <div className='bg-gray-50 p-6 rounded-xl'>
-              <div className='flex items-center mb-4'>
-                <div className='w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold mr-3'>
-                  JD
-                </div>
-                <div>
-                  <div className='font-bold'>John D.</div>
-                  <div className='text-sm text-gray-500'>Denver, CO</div>
-                </div>
-              </div>
-              <p className='text-gray-700'>
-                "I've found so many great games through PickleBookie. The skill
-                matching feature is spot on!"
-              </p>
-            </div>
-
-            <div className='bg-gray-50 p-6 rounded-xl'>
-              <div className='flex items-center mb-4'>
-                <div className='w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold mr-3'>
-                  SM
-                </div>
-                <div>
-                  <div className='font-bold'>Sarah M.</div>
-                  <div className='text-sm text-gray-500'>Austin, TX</div>
-                </div>
-              </div>
-              <p className='text-gray-700'>
-                "As a beginner, I was nervous to join games. PickleBookie made
-                it easy to find other beginners nearby."
-              </p>
-            </div>
-
-            <div className='bg-gray-50 p-6 rounded-xl'>
-              <div className='flex items-center mb-4'>
-                <div className='w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold mr-3'>
-                  RL
-                </div>
-                <div>
-                  <div className='font-bold'>Robert L.</div>
-                  <div className='text-sm text-gray-500'>Seattle, WA</div>
-                </div>
-              </div>
-              <p className='text-gray-700'>
-                "I organize weekly games for my club and PickleBookie has made
-                scheduling so much easier!"
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* CTA Section */}
       <div className='py-16 bg-gradient-to-r from-pickle-green to-court-blue text-white'>
         <div className='container mx-auto px-4 text-center'>
@@ -287,8 +217,8 @@ const SignUpLanding = () => {
             Ready to Find Your Next Game?
           </h2>
           <p className='text-xl opacity-90 mb-8 max-w-2xl mx-auto'>
-            Join thousands of pickleball players already using PickleBookie to
-            connect, play, and improve.
+            Join the PickleBookie community today and connect with pickleball
+            enthusiasts in your area.
           </p>
 
           <div className='flex flex-col sm:flex-row gap-4 justify-center'>
@@ -327,13 +257,13 @@ const SignUpLanding = () => {
             <div className='mb-4 md:mb-0'>
               <h2 className='text-xl font-bold'>PickleBookie</h2>
               <p className='text-gray-400 text-sm'>
-                The pickleball community app
+                The pickleball community platform
               </p>
             </div>
 
             <div className='flex space-x-4'>
               <a
-                href='https://twitter.com'
+                href='https://twitter.com/picklebookie'
                 target='_blank'
                 rel='noopener noreferrer'
                 className='text-gray-400 hover:text-white'
@@ -349,7 +279,7 @@ const SignUpLanding = () => {
                 </svg>
               </a>
               <a
-                href='https://instagram.com'
+                href='https://instagram.com/picklebookie'
                 target='_blank'
                 rel='noopener noreferrer'
                 className='text-gray-400 hover:text-white'
@@ -362,22 +292,6 @@ const SignUpLanding = () => {
                   fill='currentColor'
                 >
                   <path d='M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z' />
-                </svg>
-              </a>
-              <a
-                href='https://facebook.com'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='text-gray-400 hover:text-white'
-              >
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  width='24'
-                  height='24'
-                  viewBox='0 0 24 24'
-                  fill='currentColor'
-                >
-                  <path d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z' />
                 </svg>
               </a>
             </div>
