@@ -94,15 +94,27 @@ const SignUpLanding = () => {
             <div className='md:w-1/2'>
               <div className='bg-white p-2 rounded-xl shadow-2xl transform rotate-2'>
                 <div className='relative'>
-                  {/* Your actual app mockup */}
+                  {/* Update image path and provide multiple fallback options */}
                   <div className='aspect-[9/16] bg-gray-100 rounded-lg overflow-hidden'>
                     <img
-                      src='/images/app-mockup.png'
+                      src={`${
+                        process.env.PUBLIC_URL || ''
+                      }/images/app-mockup.png`}
                       alt='PickleBookie Website Preview'
                       className='w-full h-full object-cover'
                       onError={(e) => {
-                        e.target.src =
-                          'https://via.placeholder.com/800x1600/f3f4f6/94a3b8?text=PickleBookie';
+                        // First fallback: Try alternate path
+                        e.target.onerror = (e2) => {
+                          // Second fallback: Try direct path
+                          e2.target.onerror = (e3) => {
+                            // Final fallback: Use placeholder
+                            e3.target.onerror = null;
+                            e3.target.src =
+                              'https://via.placeholder.com/800x1600/f3f4f6/94a3b8?text=PickleBookie';
+                          };
+                          e2.target.src = '/app-mockup.png';
+                        };
+                        e.target.src = './images/app-mockup.png';
                       }}
                     />
                   </div>
