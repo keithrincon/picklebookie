@@ -1,11 +1,15 @@
 /* eslint-disable no-undef, no-restricted-globals, no-unused-vars */
 // Service Worker for Firebase Cloud Messaging
 
-// 1. Import required Firebase scripts
-importScripts(
-  'https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/9.6.10/firebase-messaging-compat.js'
-);
+// 1. Import required Firebase scripts with error handling
+try {
+  importScripts(
+    'https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/9.6.10/firebase-messaging-compat.js'
+  );
+} catch (e) {
+  console.error('Error importing Firebase scripts:', e);
+}
 
 // 2. Firebase configuration
 const firebaseConfig = {
@@ -18,33 +22,52 @@ const firebaseConfig = {
   measurementId: 'G-Z4SW9ZNEW2',
 };
 
-// 3. Initialize Firebase
-const firebaseApp = firebase.initializeApp(firebaseConfig);
-const messaging = firebase.messaging();
+let messaging = null;
+
+// 3. Initialize Firebase with error handling
+try {
+  if (typeof firebase !== 'undefined') {
+    const firebaseApp = firebase.initializeApp(firebaseConfig);
+    messaging = firebase.messaging();
+    console.log('[SW] Firebase messaging initialized successfully');
+  } else {
+    console.error('[SW] Firebase is not defined');
+  }
+} catch (initError) {
+  console.error('[SW] Error initializing Firebase:', initError);
+}
 
 // 4. Notification assets
 const DEFAULT_ICON = '/logo192.png';
 const DEFAULT_BADGE = '/badge.png';
 
-// 5. Background message handler
-messaging.onBackgroundMessage((payload) => {
-  console.log('[SW] Received background message:', payload);
+// 5. Background message handler with error handling
+if (messaging) {
+  messaging.onBackgroundMessage((payload) => {
+    try {
+      console.log('[SW] Received background message:', payload);
 
-  const notificationTitle = payload.notification?.title || 'New message';
-  const notificationOptions = {
-    body: payload.notification?.body || 'You have a new notification',
-    icon: payload.notification?.icon || DEFAULT_ICON,
-    badge: payload.notification?.badge || DEFAULT_BADGE,
-    data: payload.data || {},
-    vibrate: [200, 100, 200],
-  };
+      const notificationTitle = payload.notification?.title || 'New message';
+      const notificationOptions = {
+        body: payload.notification?.body || 'You have a new notification',
+        icon: payload.notification?.icon || DEFAULT_ICON,
+        badge: payload.notification?.badge || DEFAULT_BADGE,
+        data: payload.data || {},
+        vibrate: [200, 100, 200],
+      };
 
-  // Show notification
-  return self.registration
-    .showNotification(notificationTitle, notificationOptions)
-    .then(() => console.log('[SW] Notification shown'))
-    .catch((err) => console.error('[SW] Notification error:', err));
-});
+      // Show notification
+      return self.registration
+        .showNotification(notificationTitle, notificationOptions)
+        .then(() => console.log('[SW] Notification shown'))
+        .catch((err) => console.error('[SW] Notification error:', err));
+    } catch (error) {
+      console.error('[SW] Error processing background message:', error);
+    }
+  });
+} else {
+  console.warn('[SW] Firebase messaging is not available');
+}
 
 // 6. Cache important assets during install
 self.addEventListener('install', (event) => {
@@ -53,6 +76,7 @@ self.addEventListener('install', (event) => {
       .open('fcm-assets-v1')
       .then((cache) => cache.addAll([DEFAULT_ICON, DEFAULT_BADGE]))
       .then(() => self.skipWaiting())
+      .catch((err) => console.error('[SW] Cache installation error:', err))
   );
 });
 
@@ -69,6 +93,9 @@ self.addEventListener('activate', (event) => {
             .map((cache) => caches.delete(cache))
         );
       }),
-    ])
+    ]).catch((err) => console.error('[SW] Activation error:', err))
   );
 });
+
+// Log successful service worker registration
+console.log('[SW] Firebase messaging service worker registered');

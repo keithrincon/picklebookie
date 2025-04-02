@@ -8,7 +8,7 @@ import {
 import { initializeFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
-import { getMessaging } from 'firebase/messaging'; // Import getMessaging
+import { getMessaging, isSupported } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -39,7 +39,43 @@ const firestoreSettings = {
 const db = initializeFirestore(app, firestoreSettings);
 const storage = getStorage(app);
 const functions = getFunctions(app, 'us-central1');
-const messaging = getMessaging(app); // Initialize messaging
+
+// Initialize messaging conditionally
+let messaging = null;
+
+// Helper function to initialize messaging if supported
+const initMessaging = async () => {
+  try {
+    // Check if FCM is enabled in environment
+    if (process.env.REACT_APP_ENABLE_PUSH_NOTIFICATIONS !== 'true') {
+      console.log('FCM integration is disabled by configuration');
+      return null;
+    }
+
+    // Check browser support for FCM
+    const isFCMSupported = await isSupported();
+    if (!isFCMSupported) {
+      console.log('Firebase Cloud Messaging is not supported in this browser');
+      return null;
+    }
+
+    // Initialize messaging
+    return getMessaging(app);
+  } catch (error) {
+    console.error('Error initializing Firebase Cloud Messaging:', error);
+    return null;
+  }
+};
+
+// Initialize messaging asynchronously
+initMessaging().then((msgInstance) => {
+  messaging = msgInstance;
+  if (messaging) {
+    console.log('Firebase Cloud Messaging initialized');
+  } else {
+    console.log('FCM integration is disabled');
+  }
+});
 
 // Configure Google Provider
 const googleProvider = new GoogleAuthProvider();
@@ -69,7 +105,7 @@ const initConnectionMonitor = (callback) => {
   }
 };
 
-// Make sure all these are explicitly exported
+// Export everything
 export {
   app,
   auth,
@@ -78,5 +114,5 @@ export {
   functions,
   googleProvider,
   initConnectionMonitor,
-  messaging, // Export the real messaging object
+  messaging, // This may be null initially but will be updated asynchronously
 };
