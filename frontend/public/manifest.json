@@ -1,6 +1,7 @@
 {
   "short_name": "Picklebookie",
   "name": "Picklebookie - Pickleball Game Scheduling",
+  "gcm_sender_id": "103953800507",
   "icons": [
     {
       "src": "favicon.ico",
@@ -32,6 +33,5 @@
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#4CAF50",
-  "background_color": "#ffffff",
-  "gcm_sender_id": "103953800507"
+  "background_color": "#ffffff"
 }
