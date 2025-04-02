@@ -4,8 +4,9 @@ import {
   db,
   googleProvider,
   initConnectionMonitor,
-  requestNotificationPermission,
 } from '../firebase/config';
+import { requestNotificationPermission } from '../firebase/fcm';
+
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,

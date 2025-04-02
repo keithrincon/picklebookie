@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { requestNotificationPermission } from '../../firebase/config';
+import { requestNotificationPermission } from '../../firebase/fcm';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../shared/AuthLayout';
 import FormInput from '../shared/FormInput';

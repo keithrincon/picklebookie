@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { requestNotificationPermission } from '../firebase/config';
+import { requestNotificationPermission } from '../firebase/fcm';
 
 const SignUpLanding = () => {
   const [isLoading, setIsLoading] = useState(false);

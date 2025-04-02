@@ -8,6 +8,7 @@ import {
 import { initializeFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
+import { getMessaging } from 'firebase/messaging'; // Import getMessaging
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -38,14 +39,7 @@ const firestoreSettings = {
 const db = initializeFirestore(app, firestoreSettings);
 const storage = getStorage(app);
 const functions = getFunctions(app, 'us-central1');
-
-// Mock messaging object with all potentially needed methods
-const messaging = {
-  getToken: async () => null,
-  onMessage: () => () => {},
-  deleteToken: async () => {},
-  isSupported: async () => false,
-};
+const messaging = getMessaging(app); // Initialize messaging
 
 // Configure Google Provider
 const googleProvider = new GoogleAuthProvider();
@@ -75,12 +69,6 @@ const initConnectionMonitor = (callback) => {
   }
 };
 
-// Create a dummy FCM function that does nothing
-const requestNotificationPermission = async () => {
-  console.log('Notifications are currently disabled');
-  return null;
-};
-
 // Make sure all these are explicitly exported
 export {
   app,
@@ -90,6 +78,5 @@ export {
   functions,
   googleProvider,
   initConnectionMonitor,
-  requestNotificationPermission,
-  messaging, // Explicitly export the mock messaging object
+  messaging, // Export the real messaging object
 };
