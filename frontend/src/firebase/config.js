@@ -8,7 +8,7 @@ import {
 import { initializeFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
-import { getMessaging, isSupported } from 'firebase/messaging';
+import { getMessaging, isSupported, onMessage } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -30,82 +30,94 @@ const auth = initializeAuth(app, {
 });
 
 // Initialize Firestore with improved cache settings
-const firestoreSettings = {
-  cache: {
-    subscribe: true, // Enable long-lived persistence
-  },
-};
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true, // Better for unreliable networks
+});
 
-const db = initializeFirestore(app, firestoreSettings);
 const storage = getStorage(app);
 const functions = getFunctions(app, 'us-central1');
 
-// Initialize messaging conditionally
+// Enhanced FCM initialization
 let messaging = null;
+let messagingReady = false;
+const messagingSubscribers = [];
 
-// Helper function to initialize messaging if supported
 const initMessaging = async () => {
   try {
-    // Check if FCM is enabled in environment
-    if (process.env.REACT_APP_ENABLE_PUSH_NOTIFICATIONS !== 'true') {
-      console.log('FCM integration is disabled by configuration');
+    if (!process.env.REACT_APP_ENABLE_PUSH_NOTIFICATIONS === 'true') {
+      console.warn('Push notifications disabled by config');
       return null;
     }
 
-    // Check browser support for FCM
-    const isFCMSupported = await isSupported();
-    if (!isFCMSupported) {
-      console.log('Firebase Cloud Messaging is not supported in this browser');
+    if (!(await isSupported())) {
+      console.warn('FCM not supported in this environment');
       return null;
     }
 
-    // Initialize messaging
-    return getMessaging(app);
+    const instance = getMessaging(app);
+
+    // Handle foreground messages
+    onMessage(instance, (payload) => {
+      console.log('Foreground message received:', payload);
+      // You might want to dispatch this to your app state
+    });
+
+    messagingReady = true;
+    messagingSubscribers.forEach((callback) => callback(instance));
+    messagingSubscribers.length = 0;
+
+    return instance;
   } catch (error) {
-    console.error('Error initializing Firebase Cloud Messaging:', error);
+    console.error('FCM initialization failed:', error);
     return null;
   }
 };
 
-// Initialize messaging asynchronously
-initMessaging().then((msgInstance) => {
-  messaging = msgInstance;
-  if (messaging) {
-    console.log('Firebase Cloud Messaging initialized');
-  } else {
-    console.log('FCM integration is disabled');
-  }
-});
+// Safe messaging access
+const getMessagingInstance = () => {
+  return new Promise((resolve) => {
+    if (messagingReady && messaging) {
+      resolve(messaging);
+    } else {
+      messagingSubscribers.push(resolve);
+    }
+  });
+};
+
+// Initialize immediately if enabled
+if (process.env.REACT_APP_ENABLE_PUSH_NOTIFICATIONS === 'true') {
+  initMessaging().then((instance) => {
+    messaging = instance;
+  });
+}
 
 // Configure Google Provider
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
-  login_hint: '',
-  hd: '',
 });
 
-// Connection Monitor
+// Connection Monitor with enhanced error handling
 const initConnectionMonitor = (callback) => {
-  try {
-    // Skip in development mode to avoid permission errors
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Connection monitor disabled in development mode');
-      callback(true); // Assume always connected in development
-      return () => {}; // Return empty unsubscribe function
-    }
+  const connectionRef = doc(db, '.info/connected');
 
-    return onSnapshot(doc(db, '.info/connected'), (doc) => {
-      callback(doc.data()?.connected || false);
-    });
-  } catch (error) {
-    console.warn('Connection monitor error:', error);
-    callback(true); // Fallback to assume connected
-    return () => {}; // Return empty unsubscribe function
-  }
+  return onSnapshot(
+    connectionRef,
+    (snap) => {
+      try {
+        callback(!!snap.data()?.connected);
+      } catch (error) {
+        console.error('Connection monitor callback error:', error);
+        callback(true); // Fallback to connected
+      }
+    },
+    (error) => {
+      console.error('Connection monitor error:', error);
+      callback(true); // Fallback to connected
+    }
+  );
 };
 
-// Export everything
 export {
   app,
   auth,
@@ -114,5 +126,6 @@ export {
   functions,
   googleProvider,
   initConnectionMonitor,
-  messaging, // This may be null initially but will be updated asynchronously
+  getMessagingInstance, // Use this instead of direct messaging access
+  messaging, // Still exported but prefer getMessagingInstance()
 };
