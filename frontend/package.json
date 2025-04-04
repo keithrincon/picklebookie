@@ -20,7 +20,9 @@
     "react-scripts": "5.0.1",
     "react-spinners": "^0.15.0",
     "react-time-picker": "^7.0.0",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "dotenv": "^16.0.3",
+    "sentry": "^0.0.6"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
@@ -29,20 +31,30 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "env-cmd": "^10.1.0",
+    "@sentry/react": "^7.108.0",
+    "@sentry/tracing": "^7.108.0"
   },
   "scripts": {
-    "start": "GENERATE_SOURCEMAP=false react-scripts start",
-    "build": "GENERATE_SOURCEMAP=false react-scripts build && cp build/index.html build/404.html",
+    "start": "GENERATE_SOURCEMAP=false env-cmd -f .env.development react-scripts start",
+    "build": "GENERATE_SOURCEMAP=false env-cmd -f .env.production react-scripts build && cp build/index.html build/404.html",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "serve": "serve -s build -l 3000"
+    "serve": "serve -s build -l 3000",
+    "lint": "eslint src --ext .js,.jsx",
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
+    "vercel-build": "npm run build"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "no-unused-vars": "warn",
+      "react-hooks/exhaustive-deps": "warn"
+    }
   },
   "browserslist": {
     "production": [
