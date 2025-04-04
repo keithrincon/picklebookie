@@ -23,99 +23,45 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Auth with persistence and popup resolver
+// Initialize Auth
 const auth = initializeAuth(app, {
   persistence: browserLocalPersistence,
   popupRedirectResolver: browserPopupRedirectResolver,
 });
 
-// Initialize Firestore with improved cache settings
+// Initialize Firestore
 const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true, // Better for unreliable networks
+  experimentalForceLongPolling: true,
 });
 
 const storage = getStorage(app);
 const functions = getFunctions(app, 'us-central1');
 
-// Enhanced FCM initialization
+// Messaging setup (simplified)
 let messaging = null;
-let messagingReady = false;
-const messagingSubscribers = [];
-
-const initMessaging = async () => {
-  try {
-    if (!process.env.REACT_APP_ENABLE_PUSH_NOTIFICATIONS === 'true') {
-      console.warn('Push notifications disabled by config');
-      return null;
-    }
-
-    if (!(await isSupported())) {
-      console.warn('FCM not supported in this environment');
-      return null;
-    }
-
-    const instance = getMessaging(app);
-
-    // Handle foreground messages
-    onMessage(instance, (payload) => {
-      console.log('Foreground message received:', payload);
-      // You might want to dispatch this to your app state
-    });
-
-    messagingReady = true;
-    messagingSubscribers.forEach((callback) => callback(instance));
-    messagingSubscribers.length = 0;
-
-    return instance;
-  } catch (error) {
-    console.error('FCM initialization failed:', error);
-    return null;
-  }
-};
-
-// Safe messaging access
-const getMessagingInstance = () => {
-  return new Promise((resolve) => {
-    if (messagingReady && messaging) {
-      resolve(messaging);
-    } else {
-      messagingSubscribers.push(resolve);
-    }
-  });
-};
-
-// Initialize immediately if enabled
 if (process.env.REACT_APP_ENABLE_PUSH_NOTIFICATIONS === 'true') {
-  initMessaging().then((instance) => {
-    messaging = instance;
+  isSupported().then((supported) => {
+    if (supported) {
+      messaging = getMessaging(app);
+      onMessage(messaging, (payload) => {
+        console.log('Message received:', payload);
+      });
+    }
   });
 }
 
-// Configure Google Provider
+// Google Provider
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
 });
 
-// Connection Monitor with enhanced error handling
+// Connection Monitor
 const initConnectionMonitor = (callback) => {
   const connectionRef = doc(db, '.info/connected');
-
-  return onSnapshot(
-    connectionRef,
-    (snap) => {
-      try {
-        callback(!!snap.data()?.connected);
-      } catch (error) {
-        console.error('Connection monitor callback error:', error);
-        callback(true); // Fallback to connected
-      }
-    },
-    (error) => {
-      console.error('Connection monitor error:', error);
-      callback(true); // Fallback to connected
-    }
-  );
+  return onSnapshot(connectionRef, (snap) => {
+    callback(!!snap.data()?.connected);
+  });
 };
 
 export {
@@ -126,6 +72,5 @@ export {
   functions,
   googleProvider,
   initConnectionMonitor,
-  getMessagingInstance, // Use this instead of direct messaging access
-  messaging, // Still exported but prefer getMessagingInstance()
+  messaging,
 };

@@ -2,6 +2,8 @@
 .firebase/
 firebase-debug.log
 deploy.log
+src/firebase/new-key.json
+src/firebase/admin.js
 
 # Environment
 .env
@@ -42,3 +44,4 @@ firebase-admin-sdk.json
 .env.local
 .env.development
 .env.production
+frontend/src/firebase/firebase-admin-key.json
