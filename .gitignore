@@ -1,47 +1,42 @@
+# General
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # Firebase
 .firebase/
 firebase-debug.log
 deploy.log
-src/firebase/new-key.json
-src/firebase/admin.js
+*-service-account.json
+firebase-admin-sdk.json
+*.key.json
 
 # Environment
 .env
 .env.*
-!.env.example  # This is the exception pattern
+!.env.example
 
 # Dependencies
 node_modules/
+**/node_modules/
 
 # Build
 dist/
 build/
 .next/
-
-# System
-.DS_Store
-*.log
+out/
 
 # Editors
 .idea/
 .vscode/
 *.swp
+*.swo
 
 # Testing
 coverage/
 .nyc_output/
 
-# Frontend specific
-.cache/
-
-# Firebase Secrets (CRITICAL)
-serviceAccountKey.json
-*-service-account.json
-firebase-admin-sdk.json
-*.key.json
-
-# Environment Files
-.env.local
-.env.development
-.env.production
-frontend/src/firebase/firebase-admin-key.json
+# System
+Thumbs.db
