@@ -1,5 +1,4 @@
-// src/components/location/LocationAutocomplete.jsx
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const LocationAutocomplete = ({
   value,
@@ -10,92 +9,70 @@ const LocationAutocomplete = ({
 }) => {
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
-
-  // Update the input value when the value prop changes
-  useEffect(() => {
-    if (inputRef.current && value !== undefined) {
-      inputRef.current.value = value;
-    }
-  }, [value]);
+  const [mapsLoaded, setMapsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!window.google || !window.google.maps || !window.google.maps.places) {
-      console.error('Google Maps API not loaded');
-      return;
+    if (!window.google) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.onload = () => setMapsLoaded(true);
+      document.head.appendChild(script);
+    } else {
+      setMapsLoaded(true);
     }
+  }, []);
 
-    if (!inputRef.current) return;
+  useEffect(() => {
+    if (!mapsLoaded) return;
 
-    // Initialize the Google Maps Places Autocomplete
-    const autocompleteOptions = {
-      // Less restrictive types to allow more locations
-      types: ['establishment', 'geocode'],
-      fields: [
-        'address_components',
-        'formatted_address',
-        'geometry',
-        'name',
-        'place_id',
-      ],
-    };
+    const initAutocomplete = () => {
+      if (!inputRef.current) return;
 
-    // Create autocomplete instance - using the older API for now
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(
-      inputRef.current,
-      autocompleteOptions
-    );
-
-    // Add event listener for place selection
-    autocompleteRef.current.addListener('place_changed', () => {
-      const place = autocompleteRef.current.getPlace();
-
-      if (!place.geometry) {
-        console.warn('Place selected has no geometry data');
-        return;
-      }
-
-      // Create a structured place object to pass back
-      const placeData = {
-        formattedAddress: place.formatted_address,
-        name: place.name || place.formatted_address,
-        placeId: place.place_id,
-        latitude: place.geometry.location.lat(),
-        longitude: place.geometry.location.lng(),
+      const options = {
+        types: ['establishment', 'geocode'],
+        fields: ['formatted_address', 'geometry', 'name', 'place_id'],
       };
 
-      // Pass the selected place up to the parent component
-      if (onPlaceSelected) {
-        onPlaceSelected(placeData);
-      }
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(
+        inputRef.current,
+        options
+      );
 
-      // Update the input value in the parent's form state
-      if (onChange) {
-        const fakeEvent = {
-          target: {
-            name: 'location',
-            value: place.formatted_address || place.name,
+      autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current.getPlace();
+        if (!place.geometry) return;
+
+        const placeData = {
+          formattedAddress: place.formatted_address,
+          name: place.name,
+          placeId: place.place_id,
+          location: {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
           },
         };
-        onChange(fakeEvent);
-      }
-    });
 
-    // Cleanup function
+        onPlaceSelected?.(placeData);
+        onChange?.({
+          target: {
+            name: 'location',
+            value: place.formatted_address,
+          },
+        });
+      });
+    };
+
+    initAutocomplete();
+
     return () => {
-      // Clean up any listeners if necessary
-      if (autocompleteRef.current && window.google && window.google.maps) {
+      if (autocompleteRef.current) {
         window.google.maps.event.clearInstanceListeners(
           autocompleteRef.current
         );
       }
     };
-  }, [onPlaceSelected, onChange]);
-
-  const handleInputChange = (e) => {
-    if (onChange) {
-      onChange(e);
-    }
-  };
+  }, [mapsLoaded, onChange, onPlaceSelected]);
 
   return (
     <div className='location-autocomplete-container'>
@@ -105,11 +82,14 @@ const LocationAutocomplete = ({
         name='location'
         className='w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pickle-green'
         placeholder={placeholder}
-        onChange={handleInputChange}
+        onChange={(e) => onChange?.(e)}
         required={required}
-        autoComplete='off' // This can help with native browser autocomplete interference
+        autoComplete='off'
         value={value || ''}
       />
+      {!mapsLoaded && (
+        <p className='text-sm text-gray-500 mt-1'>Loading maps...</p>
+      )}
     </div>
   );
 };

@@ -21,17 +21,11 @@
       crossorigin="use-credentials"
     />
 
-    <!-- FCM/SDK Preconnects -->
+    <!-- Performance Optimizations -->
     <link rel="preconnect" href="https://www.gstatic.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <!-- Google Maps API -->
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=%REACT_APP_GOOGLE_MAPS_API_KEY%&libraries=places&callback=initMap"
-      async
-      defer
-    ></script>
+    <link rel="dns-prefetch" href="https://maps.googleapis.com" />
 
     <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -40,15 +34,31 @@
       content="black-translucent"
     />
     <meta name="mobile-web-app-capable" content="yes" />
-
-    <title>PickleBookie - Pickleball Game Scheduling</title>
-
-    <!-- Safari Pinned Tab Color -->
     <meta name="msapplication-TileColor" content="#4CAF50" />
     <meta
       name="msapplication-config"
       content="%PUBLIC_URL%/browserconfig.xml"
     />
+
+    <title>PickleBookie - Pickleball Game Scheduling</title>
+
+    <!-- Google Maps Initialization -->
+    <script>
+      // Global callback for Maps API
+      function initMap() {
+        if (window.mapInitCallback) {
+          window.mapInitCallback();
+        }
+      }
+
+      // Error handling for Maps API
+      function gmError() {
+        console.error('Google Maps failed to load');
+        if (window.mapErrorCallback) {
+          window.mapErrorCallback();
+        }
+      }
+    </script>
   </head>
   <body>
     <noscript>
@@ -62,17 +72,40 @@
     </noscript>
     <div id="root"></div>
 
-    <!-- FCM Initialization Script -->
+    <!-- Dynamic Google Maps Loader -->
     <script>
-      if ('serviceWorker' in navigator) {
+      // Only load Maps API when needed
+      function loadGoogleMaps() {
+        const script = document.createElement('script');
+        script.src =
+          'https://maps.googleapis.com/maps/api/js?key=%REACT_APP_GOOGLE_MAPS_API_KEY%&libraries=places&callback=initMap';
+        script.async = true;
+        script.defer = true;
+        script.onerror = gmError;
+        document.head.appendChild(script);
+      }
+
+      // Make loader available to React components
+      window.lazyLoadMaps = loadGoogleMaps;
+    </script>
+
+    <!-- Production-only FCM Initialization -->
+    <script>
+      if (
+        'serviceWorker' in navigator &&
+        process.env.NODE_ENV === 'production'
+      ) {
         window.addEventListener('load', () => {
           navigator.serviceWorker
             .register('%PUBLIC_URL%/firebase-messaging-sw.js')
             .then((registration) => {
-              console.log('ServiceWorker registration successful');
+              console.debug(
+                'ServiceWorker registered for scope:',
+                registration.scope
+              );
             })
             .catch((err) => {
-              console.log('ServiceWorker registration failed: ', err);
+              console.error('ServiceWorker registration failed:', err);
             });
         });
       }

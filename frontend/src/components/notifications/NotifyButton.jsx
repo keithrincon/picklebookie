@@ -1,28 +1,27 @@
 import React from 'react';
-import { sendNotification } from '../../firebase/config'; // Import the function
+import { requestNotificationPermission } from '../../firebase/fcm';
 
 function NotifyButton() {
   const handleClick = async () => {
-    const data = {
-      userId: 'someUserId', // Replace with the actual user ID
-      title: 'Test Notification',
-      body: 'This is a test notification from the NotifyButton!',
-    };
-
     try {
-      const result = await sendNotification(data);
-      console.log('Notification sent:', result.data);
+      const permission = await requestNotificationPermission('test');
+      if (permission === 'granted') {
+        console.log('Notification permission granted');
+        // Add your notification sending logic here
+      } else {
+        console.log('Notification permission denied');
+      }
     } catch (error) {
-      console.error('Error sending notification:', error);
+      console.error('Notification error:', error);
     }
   };
 
   return (
     <button
       onClick={handleClick}
-      className='bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600'
+      className='bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors'
     >
-      Send Test Notification
+      Request Notification Permission
     </button>
   );
 }
